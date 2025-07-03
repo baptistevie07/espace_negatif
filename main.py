@@ -22,6 +22,7 @@ def afficher():
                 print("Arrêt du programme d'affichage")
                 stop_event.set()
                 return
+            visualiser.handle_event(event)
         width = osc.scene_width
         height = osc.scene_height
         visualiser.update_size(width, height)

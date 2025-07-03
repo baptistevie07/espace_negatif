@@ -24,6 +24,9 @@ class Affichage:
 
     def clear(self):
         self.screen.fill((0, 0, 0))
+    
+    def handle_event(self, event):
+        self.parametres.handle_event(event)
 
     def update(self):
         self.parametres.draw_params(self.screen)

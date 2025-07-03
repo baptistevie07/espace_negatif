@@ -20,7 +20,7 @@ class Button:
         screen.blit(txt_surface, txt_rect)
 
     def handle_event(self, event):
-        if event.type == pygame.MOUSEBUTTONDOWN:
+        if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
             if self.rect.collidepoint(event.pos):
                 self.active = not self.active  # On/Off toggle
                 return True
@@ -45,6 +45,5 @@ class Parametres():
     def handle_event(self, event):
         for btn in self.buttons.values():
             result = btn.handle_event(event)
-            if result:
-                print(f"Bouton {result} changé : {self.get_state(result)}")
+           
 
