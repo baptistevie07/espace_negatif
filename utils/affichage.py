@@ -26,7 +26,7 @@ class Affichage:
     def update(self):
         pg.display.flip()
         self.clock.tick(60)
-        print(f"\rFPS: {self.clock.get_fps():.2f}", end="")
+        print(f"\rFPS: {self.clock.get_fps():.2f}                                             ", end="")
 
     def quit(self):
         self.screen.fill((0, 0, 0))  # fond noir
