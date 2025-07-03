@@ -1,5 +1,6 @@
 from utils.affichage import Affichage
 from utils.reception_osc import Reception_osc
+from utils.triangles import triangles
 import time
 import threading
 import pygame as pg
@@ -24,7 +25,9 @@ def afficher():
         height = osc.scene_height
         visualiser.update_size(width, height)
         positions = osc.get_positions()
+        points,tri= triangles(positions)
         visualiser.clear()
+        visualiser.draw_triangle(points, tri)
         visualiser.draw_points(positions)
         visualiser.update()
     visualiser.quit()

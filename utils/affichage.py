@@ -1,4 +1,4 @@
-import pygame as py
+import pygame as pg
 import numpy as np
 import math as ma
 
@@ -12,9 +12,9 @@ class Affichage:
             self.width=int(width*nb_max_pixels/height)
             self.height=int(nb_max_pixels)
             self.ratio = nb_max_pixels / height
-        self.screen = py.display.set_mode((self.width, self.height))
-        py.display.set_caption("Visualisation des positions")
-        self.clock = py.time.Clock()
+        self.screen = pg.display.set_mode((self.width, self.height))
+        pg.display.set_caption("Visualisation des positions")
+        self.clock = pg.time.Clock()
         self.running = True
         self.nb_max_pixels = nb_max_pixels
         self.real_width = width
@@ -24,13 +24,14 @@ class Affichage:
         self.screen.fill((0, 0, 0))
 
     def update(self):
-        py.display.flip()
+        pg.display.flip()
         self.clock.tick(60)
+        print(f"\rFPS: {self.clock.get_fps():.2f}", end="")
 
     def quit(self):
         self.screen.fill((0, 0, 0))  # fond noir
-        py.display.flip()
-        py.quit()
+        pg.display.flip()
+        pg.quit()
 
     def update_size(self, width, height):
         if self.real_width != width or self.real_height != height:
@@ -45,7 +46,7 @@ class Affichage:
                 self.width=int(width*self.nb_max_pixels/height)
                 self.height=int(self.nb_max_pixels)
                 self.ratio = self.nb_max_pixels / height
-            self.screen = py.display.set_mode((self.width, self.height))
+            self.screen = pg.display.set_mode((self.width, self.height))
 
     def draw_points(self, positions):
         '''positions is a dictionary with keys as object IDs and values as lists of [x, y] coordinates'''
@@ -57,5 +58,15 @@ class Affichage:
                 x = int(x*self.ratio)
                 y = self.height-int(y*self.ratio)
                 # Draw the point
-                py.draw.circle(self.screen, (255, 255, 255), (x, y), 5)
-        py.draw.rect(self.screen, (255, 0, 0), (0, 0, self.width, self.height), 1)  # Draw a red rectangle around the screen
+                pg.draw.circle(self.screen, (255, 255, 255), (x, y), 5)
+        pg.draw.rect(self.screen, (255, 0, 0), (0, 0, self.width, self.height), 1)  # Draw a red rectangle around the screen
+
+    def draw_triangle(self, points, tri):
+        if tri==None or points is None:
+            return
+        """Draws the triangles formed by the Delaunay triangulation."""
+        for simplex in tri.simplices:
+            pts = points[simplex]
+            pts = [(int(pt[0]*self.ratio), self.height-int(pt[1]*self.ratio)) for pt in pts]
+            pts.append(pts[0])
+            pg.draw.lines(self.screen, (0, 255, 0), False, pts, 1)
