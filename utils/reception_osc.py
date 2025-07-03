@@ -17,7 +17,7 @@ class Reception_osc:
         dispatcher = Dispatcher()
         dispatcher.map("/au/*", self.address_logger)
         self.server = BlockingOSCUDPServer(("127.0.0.1", self.port_in), dispatcher)
-
+        print("")
         print("Programme de réception des positions en cours, port ",self.port_in," ...")
         print("CTRL+C pour quitter le programme")
         print("")
