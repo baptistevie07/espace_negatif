@@ -25,7 +25,8 @@ def afficher():
         height = osc.scene_height
         visualiser.update_size(width, height)
         positions = osc.get_positions()
-        points,tri= triangles(positions,width, height)
+        ages = osc.get_ages()
+        points,tri= triangles(positions,ages,width, height)
         visualiser.clear()
         visualiser.draw_triangle(points, tri)
         visualiser.draw_points(positions)
