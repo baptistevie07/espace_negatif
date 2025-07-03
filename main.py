@@ -17,6 +17,7 @@ def afficher():
             if event.type == pg.QUIT:
                 running = False
                 visualiser.quit()
+                print("Arrêt du programme d'affichage")
                 return
         positions = osc.get_positions()
         visualiser.clear()
@@ -31,22 +32,16 @@ osc = Reception_osc(recept_port)
 
 thread1 = threading.Thread(target=osc.run_server)
 thread2 = threading.Thread(target=afficher)
-thread2.start()
 thread1.start()
+thread2.start()
+try:
+    while True:
+        time.sleep(0.5)
+except KeyboardInterrupt:
+    osc.stop_server()
+    thread1.join()  
+    thread2.join()
 # Wait for threads to finish
-thread1.join()  
-thread2.join()
+
 
 print("Fin du programme")
-
-
-""""
- thread1 = threading.Thread(target=run_server, args=(server,))
-
-
-    thread1.start()
-
-
-
-
-    thread1.join()"""

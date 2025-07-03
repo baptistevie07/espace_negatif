@@ -12,6 +12,7 @@ class Affichage:
             self.height=int(nb_max_pixels)
             self.ratio = nb_max_pixels / height
         self.screen = py.display.set_mode((self.width, self.height))
+        py.display.set_caption("Visualisation des positions")
         self.clock = py.time.Clock()
         self.running = True
         self.nb_max_pixels = nb_max_pixels

@@ -65,6 +65,10 @@ class Reception_osc:
             
     def run_server(self):
         self.server.serve_forever()
+    def stop_server(self):
+        """Arrête le serveur OSC"""
+        self.server.shutdown()
+        print("Serveur OSC arrêté")
 
     def get_positions(self):
         """Retourne les positions des objets détectés"""
