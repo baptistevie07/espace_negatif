@@ -1,6 +1,7 @@
 import pygame as pg
 import numpy as np
 import math as ma
+from utils.pg_utils.buttons import Parametres
 
 class Affichage:
     def __init__(self, width, height,nb_max_pixels=1000):
@@ -12,18 +13,20 @@ class Affichage:
             self.width=int(width*nb_max_pixels/height)
             self.height=int(nb_max_pixels)
             self.ratio = nb_max_pixels / height
-        self.screen = pg.display.set_mode((self.width, self.height))
+        self.screen = pg.display.set_mode((self.width+150, self.height))
         pg.display.set_caption("Visualisation des positions")
         self.clock = pg.time.Clock()
         self.running = True
         self.nb_max_pixels = nb_max_pixels
         self.real_width = width
         self.real_height = height
+        self.parametres = Parametres()
 
     def clear(self):
         self.screen.fill((0, 0, 0))
 
     def update(self):
+        self.parametres.draw_params(self.screen)
         pg.display.flip()
         self.clock.tick(60)
         print(f"\rFPS: {self.clock.get_fps():.2f}                                             ", end="")
@@ -46,7 +49,7 @@ class Affichage:
                 self.width=int(width*self.nb_max_pixels/height)
                 self.height=int(self.nb_max_pixels)
                 self.ratio = self.nb_max_pixels / height
-            self.screen = pg.display.set_mode((self.width, self.height))
+            self.screen = pg.display.set_mode((self.width+150, self.height))
 
     def draw_points(self, positions):
         '''positions is a dictionary with keys as object IDs and values as lists of [x, y] coordinates'''

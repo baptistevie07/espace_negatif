@@ -12,6 +12,7 @@ recept_port = 3335
 
 def afficher():
     visualiser = Affichage(13.08, 7.77)
+    visualiser.parametres.add_button("start", "Start", visualiser.width)
     running=True
     while running and not stop_event.is_set():
         for event in pg.event.get():
