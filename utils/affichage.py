@@ -29,7 +29,7 @@ class Affichage:
         self.parametres.handle_event(event)
 
     def update(self):
-        self.parametres.draw_params(self.screen)
+        self.parametres.draw_params(self.screen, self.width, self.height)
         pg.display.flip()
         self.clock.tick(60)
         print(f"\rFPS: {self.clock.get_fps():.2f}                                             ", end="")
@@ -54,25 +54,30 @@ class Affichage:
                 self.ratio = self.nb_max_pixels / height
             self.screen = pg.display.set_mode((self.width+150, self.height))
 
-    def draw_points(self, positions):
+    def draw_points(self, positions,label):
         '''positions is a dictionary with keys as object IDs and values as lists of [x, y] coordinates'''
-        for key in positions.keys():
-            pos = positions[key]
-            if pos is not None:
-                x, y = pos
-                # Normalize coordinates to fit within the screen dimensions
-                x = int(x*self.ratio)
-                y = self.height-int(y*self.ratio)
-                # Draw the point
-                pg.draw.circle(self.screen, (255, 255, 255), (x, y), 5)
-        pg.draw.rect(self.screen, (255, 0, 0), (0, 0, self.width, self.height), 1)  # Draw a red rectangle around the screen
+        if self.parametres.buttons[label].active:
+            for key in positions.keys():
+                pos = positions[key]
+                if pos is not None:
+                    x, y = pos
+                    # Normalize coordinates to fit within the screen dimensions
+                    x = int(x*self.ratio)
+                    y = self.height-int(y*self.ratio)
+                    # Draw the point
+                    pg.draw.circle(self.screen, (255, 255, 255), (x, y), 5)
 
-    def draw_triangle(self, points, tri):
+    def draw_triangle(self, points, tri,label):
         if tri==None or points is None:
             return
         """Draws the triangles formed by the Delaunay triangulation."""
-        for simplex in tri.simplices:
-            pts = points[simplex]
-            pts = [(int(pt[0]*self.ratio), self.height-int(pt[1]*self.ratio)) for pt in pts]
-            pts.append(pts[0])
-            pg.draw.lines(self.screen, (0, 255, 0), False, pts, 1)
+        if self.parametres.buttons[label].active:
+            for simplex in tri.simplices:
+                pts = points[simplex]
+                pts = [(int(pt[0]*self.ratio), self.height-int(pt[1]*self.ratio)) for pt in pts]
+                pts.append(pts[0])
+                pg.draw.lines(self.screen, (0, 255, 0), False, pts, 1)
+
+    def add_button(self, name, text, active=False):
+        """Adds a button to the display."""
+        self.parametres.add_button(name, text, self.width,active)

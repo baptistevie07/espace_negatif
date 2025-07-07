@@ -12,7 +12,8 @@ recept_port = 3335
 
 def afficher():
     visualiser = Affichage(13.08, 7.77)
-    visualiser.parametres.add_button("start", "Start", visualiser.width)
+    visualiser.add_button("points", "Points",True)
+    visualiser.add_button("triangles", "Triangles",True)
     running=True
     while running and not stop_event.is_set():
         for event in pg.event.get():
@@ -30,8 +31,8 @@ def afficher():
         ages = osc.get_ages()
         points,tri= triangles(positions,ages,width, height)
         visualiser.clear()
-        visualiser.draw_triangle(points, tri)
-        visualiser.draw_points(positions)
+        visualiser.draw_triangle(points, tri,"triangles")
+        visualiser.draw_points(positions,"points")
         visualiser.update()
     visualiser.quit()
 
