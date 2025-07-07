@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.spatial import Delaunay
 from scipy.spatial import Voronoi
+from collections import defaultdict
 
 def computation(positions,ages, width, height):
     """On prend en entrée un dictionnaire avec les positions des objets détectés"""
@@ -24,6 +25,13 @@ def computation(positions,ages, width, height):
     # Triangulation de Delaunay
     tri = Delaunay(points)
 
+    
+    triangle_counts = defaultdict(int)
+
+    for simplex in tri.simplices:
+        for vertex in simplex:
+            triangle_counts[vertex] += 1
+
     # Voronoï diagram
     vor = Voronoi(points)
 
@@ -38,4 +46,4 @@ def computation(positions,ages, width, height):
         else:
             areas.append(np.inf)  # Cellule infinie → point au bord
 
-    return points,tri,vor,areas
+    return points,tri,triangle_counts,areas

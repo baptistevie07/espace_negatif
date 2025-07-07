@@ -90,6 +90,26 @@ class Affichage:
                 pts = [(int(pt[0]*self.ratio), self.height-int(pt[1]*self.ratio)) for pt in pts]
                 pts.append(pts[0])
                 pg.draw.lines(self.screen, (0, 255, 0), False, pts, 1)
+    def draw_counts(self, points, triangle_counts,number,label):
+        """Draws the number of triangles around each point, only the top 'number' points."""
+        if self.parametres.buttons[label].active:
+            # Sort points by the number of triangles
+            sorted_points = sorted(triangle_counts.items(), key=lambda x: x[1], reverse=True)
+            top_points = sorted_points[:number]
+            for idx, (point_idx, count) in enumerate(top_points):
+                point = points[point_idx]
+                x, y = point
+                x = int(x * self.ratio)
+                y = self.height - int(y * self.ratio)
+
+                pg.draw.circle(self.screen, (255, 255, 255), (x, y), 10)
+                # Draw the count as text
+                font = pg.font.Font(None, 24)
+                text_surface = font.render(str(count), True, (255, 0, 0))
+                text_rect = text_surface.get_rect(center=(x, y))
+                self.screen.blit(text_surface, text_rect)
+        
+        
 
     def add_button(self, name, text, active=False):
         """Adds a button to the display."""

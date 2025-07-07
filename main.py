@@ -14,7 +14,8 @@ def afficher():
     visualiser = Affichage(13.08, 7.77)
     visualiser.add_button("points", "Points",True)
     visualiser.add_button("triangles", "Triangles",True)
-    visualiser.add_button("areas", "Aires",False)
+    visualiser.add_button("areas", "Aires")
+    visualiser.add_button("triangles_counts", "Compte")
     running=True
     while running and not stop_event.is_set():
         for event in pg.event.get():
@@ -30,11 +31,12 @@ def afficher():
         visualiser.update_size(width, height)
         positions = osc.get_positions()
         ages = osc.get_ages()
-        points,tri,vor,areas= computation(positions,ages,width, height)
+        points,tri,triangle_counts,areas= computation(positions,ages,width, height)
         visualiser.clear()
         visualiser.draw_areas(points,areas,"areas")
         visualiser.draw_triangle(points, tri,"triangles")
         visualiser.draw_points(positions,"points")
+        visualiser.draw_counts(points,triangle_counts,3,"triangles_counts")
         visualiser.update()
     visualiser.quit()
 
