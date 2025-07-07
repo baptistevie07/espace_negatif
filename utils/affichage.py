@@ -97,7 +97,7 @@ class Affichage:
         if self.parametres.buttons[label].active:
             # Sort points by the number of triangles
             sorted_points = sorted(triangle_counts.items(), key=lambda x: x[1], reverse=True)
-            top_points = sorted_points[:number]
+            top_points = [(idx, count) for idx, count in sorted_points if count >= number]
             for idx, (point_idx, count) in enumerate(top_points):
                 point = points[point_idx]
                 x, y = point
@@ -129,9 +129,22 @@ class Affichage:
                 x, y = points[idx]
                 x = int(x * self.ratio)
                 y = self.height - int(y * self.ratio)
-                pg.draw.circle(self.screen, (255, 255, 0), (x, y), 12, 0)  # disque jaune plein
+                pg.draw.circle(self.screen, (255, 255, 0), (x, y), 18, 0)  # disque jaune plein
 
-
+    def draw_ids(self, points, label):
+        """Draws the IDs of the objects at their positions."""
+        if self.parametres.buttons[label].active:
+            for idx, pos in enumerate(points):
+                if pos is not None:
+                    x, y = pos
+                    # Normalize coordinates to fit within the screen dimensions
+                    x = int(x * self.ratio) + 10
+                    y = self.height - int(y * self.ratio) - 10
+                    # Draw the ID as text
+                    font = pg.font.Font(None, 24)
+                    text_surface = font.render(str(idx), True, (0, 255, 0))
+                    text_rect = text_surface.get_rect(center=(x, y))
+                    self.screen.blit(text_surface, text_rect)
 
     def add_button(self, name, text, active=False):
         """Adds a button to the display."""

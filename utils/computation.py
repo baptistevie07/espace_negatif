@@ -50,7 +50,7 @@ def computation(positions,ages, width, height):
 
     return points,tri,triangle_counts,areas
 
-def personnes_centrales(points,tri, triangle_counts,areas,n_triangles,distance_min):
+def personnes_centrales(points,tri, triangle_counts,areas,n_triangles,distance_min,angle_max):
     """Cherche les candidats qui puissent être au centre des zones"""
     if tri is None or triangle_counts is None:
         return None
@@ -78,5 +78,41 @@ def personnes_centrales(points,tri, triangle_counts,areas,n_triangles,distance_m
             filtered_candidates.append(idx)
     if len(filtered_candidates) == 0:
         return None
+    # Si on a un seul candidat, on le retourne
+    if len(filtered_candidates) == 1:
+        return filtered_candidates
+    # S'il reste plusieurs candidats, on vérifie qu'il n'y a pas de faux positifs parmis eux. 
+    # D'abord on liste tous les points non candidats, voisins de candidats
+    non_candidate_neighbors = []
+    for idx in filtered_candidates:
+        point = points[idx]
+        for other_idx, other_point in enumerate(points):
+            if other_idx not in filtered_candidates:
+                if other_idx not in non_candidate_neighbors:
+                    non_candidate_neighbors.append(other_idx)
+    # On calcule les angles des vecteurs candidats - voisins non candidats
+    #print(f"Nombre de candidats après filtrage : {len(filtered_candidates)}")
+    final_candidates = []
+    #print(f"Nombre de candidats après filtrage : {len(filtered_candidates)}")
+    #print(f"Nombre de voisins non candidats : {len(non_candidate_neighbors)}")
+    for idx in filtered_candidates:
+        #print(f"Vérification des angles pour le candidat {idx}")
+        angles = []
+        point = points[idx]
+        for other_idx in non_candidate_neighbors:
+            other_point = points[other_idx]
+            vector = other_point - point
+            angle = np.arctan2(vector[1], vector[0]) * 180 / np.pi+180
+            angles.append(angle)
+        angles = np.sort(np.array(angles))
+        #print(f"Angles pour le candidat {idx}: {angles}")
+        differences = np.diff(angles)
+        # On vérifie si l'angle minimum est respecté
+        #print(f"Angle max pour le candidat {idx}: {max(differences)}")
+        if max(differences) < angle_max and 360 + angles[0] - angles[-1] < angle_max: #cas où le dernier angle est proche du premier
+            final_candidates.append(idx)
+    
+    #print(f"Nombre de candidats après vérification des angles : {len(filtered_candidates)}")
 
-    return filtered_candidates
+
+    return final_candidates if final_candidates else None
