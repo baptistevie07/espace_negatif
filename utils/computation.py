@@ -29,6 +29,9 @@ def computation(positions,ages, width, height):
     if len(points) < 3:
         print(f"\rPas assez de points uniques pour la triangulation (après filtrage).", end="")
         return None, None, None, None
+    # Exclusion de point spécifiques, pour des tests ##################################################
+    points_a_exclure = [10]
+    points = np.array([point for i, point in enumerate(points) if i not in points_a_exclure])
     # Triangulation de Delaunay
     tri = Delaunay(points)
 
@@ -57,9 +60,9 @@ def computation(positions,ages, width, height):
 
     return points,tri,triangle_counts,areas
 
-def personnes_centrales(points,tri, triangle_counts,areas,n_triangles,distance_min,angle_max):
+def personnes_centrales(points,tri, triangle_counts,areas,n_triangles,distance_min,angle_max,id_to_track = []):
     """Cherche les candidats qui puissent être au centre des zones"""
-    id_to_track = [11]
+    
     if tri is None or triangle_counts is None:
         return None
     # On ne conserve que les candidats à l'aire non infinie
@@ -131,3 +134,20 @@ def personnes_centrales(points,tri, triangle_counts,areas,n_triangles,distance_m
 
 
     return final_candidates if final_candidates else None
+
+def empty_zones(points,tri,area_threshold=4):
+    # On récupère la triangulation de Delaunay, et on calcule les aires des triangles : {idx: [area, [point1, point2, point3], [i1, i2, i3]]}
+    if tri is None or points is None:
+        return None
+    empty_triangles = {}
+    idx = 0
+    for simplex in tri.simplices:
+        pts = points[simplex]
+        area = 0.5 * np.abs(
+            np.dot([p[0] for p in pts], np.roll([p[1] for p in pts], 1)) -
+            np.dot([p[1] for p in pts], np.roll([p[0] for p in pts], 1))
+        )
+        if area > area_threshold:
+            empty_triangles[idx] = [area]+ simplex.tolist()
+            idx += 1
+    return empty_triangles

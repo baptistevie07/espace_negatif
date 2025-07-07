@@ -13,7 +13,7 @@ class Affichage:
             self.width=int(width*nb_max_pixels/height)
             self.height=int(nb_max_pixels)
             self.ratio = nb_max_pixels / height
-        self.screen = pg.display.set_mode((self.width+150, self.height))
+        self.screen = pg.display.set_mode((self.width+250, self.height))
         pg.display.set_caption("Visualisation des positions")
         self.clock = pg.time.Clock()
         self.running = True
@@ -52,7 +52,7 @@ class Affichage:
                 self.width=int(width*self.nb_max_pixels/height)
                 self.height=int(self.nb_max_pixels)
                 self.ratio = self.nb_max_pixels / height
-            self.screen = pg.display.set_mode((self.width+150, self.height))
+            self.screen = pg.display.set_mode((self.width+250, self.height))
 
     def draw_points(self, positions,label):
         '''positions is a dictionary with keys as object IDs and values as lists of [x, y] coordinates'''
@@ -94,6 +94,8 @@ class Affichage:
 
     def draw_counts(self, points, triangle_counts,number,label):
         """Draws the number of triangles around each point, only the top 'number' points."""
+        if triangle_counts is None or points is None:
+            return
         if self.parametres.buttons[label].active:
             # Sort points by the number of triangles
             sorted_points = sorted(triangle_counts.items(), key=lambda x: x[1], reverse=True)
@@ -148,7 +150,29 @@ class Affichage:
                     rect_bg = text_rect.inflate(6, 4)
                     pg.draw.rect(self.screen, (255, 255, 255), rect_bg)
                     self.screen.blit(text_surface, text_rect)
-
+    def draw_empty_triangles(self, empty_triangles,points,label):
+        """Draws the empty triangles."""
+        """empty_triangles is a dictionary with keys as triangle indices and values as lists of [area, point1, point2, point3]"""
+        if type(empty_triangles)=='NoneType' or points is None:
+            return
+        if not self.parametres.buttons[label].active:
+            return
+        for idx, (area, p1, p2, p3) in empty_triangles.items():
+            if p1 is None or p2 is None or p3 is None:
+                continue
+            # Normalize coordinates to fit within the screen dimensions
+            x1, y1 = points[p1]
+            x2, y2 = points[p2]
+            x3, y3 = points[p3]
+            x1 = int(x1 * self.ratio)
+            y1 = self.height - int(y1 * self.ratio)
+            x2 = int(x2 * self.ratio)
+            y2 = self.height - int(y2 * self.ratio)
+            x3 = int(x3 * self.ratio)
+            y3 = self.height - int(y3 * self.ratio)
+            # Draw the triangle
+            pg.draw.polygon(self.screen, (180, 0, 0), [(x1, y1), (x2, y2), (x3, y3)])
+        #triangles : {idx: [area, point1, point2, point3]}
     def add_button(self, name, text, active=False):
         """Adds a button to the display."""
         self.parametres.add_button(name, text, self.width,active)

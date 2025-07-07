@@ -13,10 +13,11 @@ recept_port = 3335
 def afficher():
     visualiser = Affichage(13.08, 7.77)
     visualiser.add_button("points", "Points",True)
-    visualiser.add_button("triangles", "Triangles",True)
-    visualiser.add_button("areas", "Aires")
-    visualiser.add_button("triangles_counts", "Comptes")
-    visualiser.add_button("zones", "Zones",True)
+    visualiser.add_button("triangles", "Triangles Delaunay",True)
+    visualiser.add_button("triangles_v", "Triangles Vides",False)
+    visualiser.add_button("areas", "Aires de Voronoi")
+    visualiser.add_button("triangles_counts", "Nb voisins")
+    visualiser.add_button("zones", "Zones détectées",True)
     visualiser.add_button("ids", "IDs")
     running=True
     while running and not stop_event.is_set():
@@ -34,9 +35,11 @@ def afficher():
         positions = osc.get_positions()
         ages = osc.get_ages()
         points,tri,triangle_counts,areas= computation(positions,ages,width, height)
-        candidates = personnes_centrales(points,tri, triangle_counts,areas,n_triangles=6,distance_min=0.5,angle_max=90)
+        candidates = personnes_centrales(points,tri, triangle_counts,areas,n_triangles=6,distance_min=1,angle_max=90)
+        empty_triangles = empty_zones(points,tri,area_threshold=2)
         visualiser.clear()
         visualiser.draw_zones(points, tri,candidates,"zones")
+        visualiser.draw_empty_triangles( empty_triangles,points,"triangles_v")
         visualiser.draw_triangle(points, tri,"triangles")
         visualiser.draw_points(positions,"points")
         visualiser.draw_counts(points,triangle_counts,5,"triangles_counts")

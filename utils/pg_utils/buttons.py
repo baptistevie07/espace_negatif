@@ -32,7 +32,7 @@ class Parametres():
     def add_button(self, label,text,width, active):
         i = len(self.buttons)
         button = Button(
-            rect=(width + 25, 10 + i * 60,100, 50),  # Position et taille par défaut
+            rect=(width + 25, 10 + i * 60,200, 50),  # Position et taille par défaut
             text=text,
             font=pygame.font.Font(None, 24),
             on_color=(0, 255, 0),
