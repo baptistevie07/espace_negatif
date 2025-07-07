@@ -66,6 +66,19 @@ class Affichage:
                     y = self.height-int(y*self.ratio)
                     # Draw the point
                     pg.draw.circle(self.screen, (255, 255, 255), (x, y), 5)
+    def draw_areas(self, points,areas,label):
+        '''dessine un cercle autour de chaque point avec une taille proportionnelle à la surface'''
+        if self.parametres.buttons[label].active:
+            for i, point in enumerate(points):
+                x, y = point
+                if areas[i] == np.inf:
+                    continue
+                radius = int(ma.sqrt(areas[i])* self.ratio/10)
+                x = int(x * self.ratio)
+                y = self.height - int(y * self.ratio)
+                # Draw the circle
+                pg.draw.circle(self.screen, (0, 0, 255), (x, y), radius, 1)
+
 
     def draw_triangle(self, points, tri,label):
         if tri==None or points is None:

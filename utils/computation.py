@@ -1,14 +1,15 @@
 import numpy as np
 from scipy.spatial import Delaunay
+from scipy.spatial import Voronoi
 
-def triangles(positions,ages, width, height):
+def computation(positions,ages, width, height):
     """On prend en entrée un dictionnaire avec les positions des objets détectés"""
     # On extrait les points des positions
     points = np.array([pos for pos in positions.values() if pos is not None])
     ages = np.array([ages[obj] for obj in positions.keys() if positions[obj] is not None])
     if len(points) < 3:
         print(f"\rPas assez de points uniques pour la triangulation (avant filtrage).", end="")
-        return None, None
+        return None, None, None, None
     # On exclut les points qui sont en dehors de la scène
     mask=((points[:, 0] >= 0) & (points[:, 0] <= width) & 
                     (points[:, 1] >= 0) & (points[:, 1] <= height)&(ages>30))
@@ -19,7 +20,22 @@ def triangles(positions,ages, width, height):
     # Si moins de 3 points uniques, on ne peut pas faire de triangulation
     if len(points) < 3:
         print(f"\rPas assez de points uniques pour la triangulation (après filtrage).", end="")
-        return None, None
+        return None, None, None, None
     # Triangulation de Delaunay
     tri = Delaunay(points)
-    return points,tri
+
+    # Voronoï diagram
+    vor = Voronoi(points)
+
+    areas = []
+    for region_index in vor.point_region:
+        region = vor.regions[region_index]
+        if not -1 in region and len(region) > 0:
+            polygon = [vor.vertices[i] for i in region]
+            area = 0.5 * np.abs(np.dot([p[0] for p in polygon], np.roll([p[1] for p in polygon], 1)) -
+                                np.dot([p[1] for p in polygon], np.roll([p[0] for p in polygon], 1)))
+            areas.append(area)
+        else:
+            areas.append(np.inf)  # Cellule infinie → point au bord
+
+    return points,tri,vor,areas
