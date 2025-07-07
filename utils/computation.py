@@ -50,7 +50,7 @@ def computation(positions,ages, width, height):
 
     return points,tri,triangle_counts,areas
 
-def personnes_centrales(tri, triangle_counts,areas,n_triangles):
+def personnes_centrales(points,tri, triangle_counts,areas,n_triangles,distance_min):
     """Cherche les candidats qui puissent être au centre des zones"""
     if tri is None or triangle_counts is None:
         return None
@@ -62,4 +62,21 @@ def personnes_centrales(tri, triangle_counts,areas,n_triangles):
     candidates = {idx: count for idx, count in candidates.items() if count >= n_triangles}
     if not candidates:
         return None
-    return list(candidates.keys())
+    # Parmi les candidats restants, on enlève ceux qui sont proches d'un autre point (dans points) qui n'est pas candidat
+    candidate_indices = list(candidates.keys())
+    filtered_candidates = []
+    for idx in candidate_indices:
+        point = points[idx]
+        is_far = True
+        for other_idx, other_point in enumerate(points):
+            if other_idx not in candidate_indices:
+                distance = np.linalg.norm(point - other_point)
+                if distance < distance_min:
+                    is_far = False
+                    break
+        if is_far:
+            filtered_candidates.append(idx)
+    if len(filtered_candidates) == 0:
+        return None
+
+    return filtered_candidates

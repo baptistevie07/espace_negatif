@@ -111,23 +111,25 @@ class Affichage:
                 text_rect = text_surface.get_rect(center=(x, y))
                 self.screen.blit(text_surface, text_rect)
         
-    def draw_zones(self, points, tri, triangle_counts, number, label):
-        """Dessine les zones autour des triangles connectés aux points les plus densément connectés."""
-        if tri is None or points is None:
+    def draw_zones(self, points, tri, candidates, label):
+        """Dessine les zones autour des triangles connectés aux points spécifiés dans 'candidates'."""
+        if tri is None or points is None or not candidates:
             return
         if not self.parametres.buttons[label].active:
             return
-        # 1. Trouver les 'number' points les plus connectés
-        sorted_points = sorted(triangle_counts.items(), key=lambda x: x[1], reverse=True)
-        top_point_indices = set(idx for idx, _ in sorted_points[:number])
-
-        # 2. Parcourir les triangles
+        candidate_set = set(candidates)
         for simplex in tri.simplices:
-            if any(vertex in top_point_indices for vertex in simplex):
-                # Ce triangle touche un des points les plus connectés
+            if any(vertex in candidate_set for vertex in simplex):
                 pts = points[simplex]
                 pts = [(int(pt[0]*self.ratio), self.height-int(pt[1]*self.ratio)) for pt in pts]
                 pg.draw.polygon(self.screen, (255, 0, 0, 100), pts)  # zone rouge semi-transparente
+        # Tracer un disque sur chaque candidat
+        for idx in candidate_set:
+            if 0 <= idx < len(points):
+                x, y = points[idx]
+                x = int(x * self.ratio)
+                y = self.height - int(y * self.ratio)
+                pg.draw.circle(self.screen, (255, 255, 0), (x, y), 12, 0)  # disque jaune plein
 
 
 
