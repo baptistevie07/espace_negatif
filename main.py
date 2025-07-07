@@ -34,7 +34,7 @@ def afficher():
         positions = osc.get_positions()
         ages = osc.get_ages()
         points,tri,triangle_counts,areas= computation(positions,ages,width, height)
-        candidates = personnes_centrales(points,tri, triangle_counts,areas,n_triangles=5,distance_min=0.5,angle_max=90)
+        candidates = personnes_centrales(points,tri, triangle_counts,areas,n_triangles=6,distance_min=0.5,angle_max=90)
         visualiser.clear()
         visualiser.draw_zones(points, tri,candidates,"zones")
         visualiser.draw_triangle(points, tri,"triangles")

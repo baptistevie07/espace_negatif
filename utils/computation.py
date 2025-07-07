@@ -3,6 +3,13 @@ from scipy.spatial import Delaunay
 from scipy.spatial import Voronoi
 from collections import defaultdict
 
+def afficher(id_to_track, candidates,message):
+     if not all(x in candidates for x in id_to_track): #inclusion
+        lost_ids = [id for id in id_to_track if id not in candidates]
+        print("Perte de candidats : ",message," : ", lost_ids)
+        return [id for id in id_to_track if id in candidates]
+     return id_to_track
+     
 def computation(positions,ages, width, height):
     """On prend en entrée un dictionnaire avec les positions des objets détectés"""
     # On extrait les points des positions
@@ -52,14 +59,17 @@ def computation(positions,ages, width, height):
 
 def personnes_centrales(points,tri, triangle_counts,areas,n_triangles,distance_min,angle_max):
     """Cherche les candidats qui puissent être au centre des zones"""
+    id_to_track = [11]
     if tri is None or triangle_counts is None:
         return None
     # On ne conserve que les candidats à l'aire non infinie
     candidates = {idx: count for idx, count in triangle_counts.items() if areas.get(idx, np.inf) != np.inf}
+    id_to_track = afficher(id_to_track, candidates,"aire infinie")
     if not candidates:
         return None
     # On garde uniquement les candidats avec plus de n_triangles triangles
     candidates = {idx: count for idx, count in candidates.items() if count >= n_triangles}
+    id_to_track = afficher(id_to_track, candidates,f"moins de {n_triangles} triangles")
     if not candidates:
         return None
     # Parmi les candidats restants, on enlève ceux qui sont proches d'un autre point (dans points) qui n'est pas candidat
@@ -76,11 +86,15 @@ def personnes_centrales(points,tri, triangle_counts,areas,n_triangles,distance_m
                     break
         if is_far:
             filtered_candidates.append(idx)
+    # rendre unique filtred_candidates
+    filtered_candidates = list(set(filtered_candidates))
+    id_to_track = afficher(id_to_track, filtered_candidates,f"proche d'un autre point (distance < {distance_min})")
     if len(filtered_candidates) == 0:
         return None
     # Si on a un seul candidat, on le retourne
     if len(filtered_candidates) == 1:
         return filtered_candidates
+
     # S'il reste plusieurs candidats, on vérifie qu'il n'y a pas de faux positifs parmis eux. 
     # D'abord on liste tous les points non candidats, voisins de candidats
     non_candidate_neighbors = []
@@ -93,6 +107,7 @@ def personnes_centrales(points,tri, triangle_counts,areas,n_triangles,distance_m
     # On calcule les angles des vecteurs candidats - voisins non candidats
     #print(f"Nombre de candidats après filtrage : {len(filtered_candidates)}")
     final_candidates = []
+
     #print(f"Nombre de candidats après filtrage : {len(filtered_candidates)}")
     #print(f"Nombre de voisins non candidats : {len(non_candidate_neighbors)}")
     for idx in filtered_candidates:
@@ -111,7 +126,7 @@ def personnes_centrales(points,tri, triangle_counts,areas,n_triangles,distance_m
         #print(f"Angle max pour le candidat {idx}: {max(differences)}")
         if max(differences) < angle_max and 360 + angles[0] - angles[-1] < angle_max: #cas où le dernier angle est proche du premier
             final_candidates.append(idx)
-    
+    id_to_track = afficher(id_to_track, final_candidates,f"angle max {angle_max}°")
     #print(f"Nombre de candidats après vérification des angles : {len(filtered_candidates)}")
 
 

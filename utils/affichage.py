@@ -138,12 +138,15 @@ class Affichage:
                 if pos is not None:
                     x, y = pos
                     # Normalize coordinates to fit within the screen dimensions
-                    x = int(x * self.ratio) + 10
-                    y = self.height - int(y * self.ratio) - 10
+                    x = int(x * self.ratio) + 15
+                    y = self.height - int(y * self.ratio) - 15
                     # Draw the ID as text
                     font = pg.font.Font(None, 24)
-                    text_surface = font.render(str(idx), True, (0, 255, 0))
+                    text_surface = font.render(str(idx), True, (0, 0, 0))
                     text_rect = text_surface.get_rect(center=(x, y))
+                    # Draw a white rectangle as background for better readability
+                    rect_bg = text_rect.inflate(6, 4)
+                    pg.draw.rect(self.screen, (255, 255, 255), rect_bg)
                     self.screen.blit(text_surface, text_rect)
 
     def add_button(self, name, text, active=False):
