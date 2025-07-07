@@ -16,6 +16,7 @@ def afficher():
     visualiser.add_button("triangles", "Triangles",True)
     visualiser.add_button("areas", "Aires")
     visualiser.add_button("triangles_counts", "Compte")
+    visualiser.add_button("zones", "Zones",True)
     running=True
     while running and not stop_event.is_set():
         for event in pg.event.get():
@@ -33,6 +34,7 @@ def afficher():
         ages = osc.get_ages()
         points,tri,triangle_counts,areas= computation(positions,ages,width, height)
         visualiser.clear()
+        visualiser.draw_zones(points, tri, triangle_counts,2,"zones")
         visualiser.draw_areas(points,areas,"areas")
         visualiser.draw_triangle(points, tri,"triangles")
         visualiser.draw_points(positions,"points")
