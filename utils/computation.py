@@ -35,15 +35,31 @@ def computation(positions,ages, width, height):
     # Voronoï diagram
     vor = Voronoi(points)
 
-    areas = []
-    for region_index in vor.point_region:
+    areas = {}
+    for idx, region_index in enumerate(vor.point_region):
         region = vor.regions[region_index]
         if not -1 in region and len(region) > 0:
             polygon = [vor.vertices[i] for i in region]
-            area = 0.5 * np.abs(np.dot([p[0] for p in polygon], np.roll([p[1] for p in polygon], 1)) -
-                                np.dot([p[1] for p in polygon], np.roll([p[0] for p in polygon], 1)))
-            areas.append(area)
+            area = 0.5 * np.abs(
+                np.dot([p[0] for p in polygon], np.roll([p[1] for p in polygon], 1)) -
+                np.dot([p[1] for p in polygon], np.roll([p[0] for p in polygon], 1))
+            )
+            areas[idx] = area
         else:
-            areas.append(np.inf)  # Cellule infinie → point au bord
+            areas[idx] = np.inf  # Cellule infinie → point au bord
 
     return points,tri,triangle_counts,areas
+
+def personnes_centrales(tri, triangle_counts,areas,n_triangles):
+    """Cherche les candidats qui puissent être au centre des zones"""
+    if tri is None or triangle_counts is None:
+        return None
+    # On ne conserve que les candidats à l'aire non infinie
+    candidates = {idx: count for idx, count in triangle_counts.items() if areas.get(idx, np.inf) != np.inf}
+    if not candidates:
+        return None
+    # On garde uniquement les candidats avec plus de n_triangles triangles
+    candidates = {idx: count for idx, count in candidates.items() if count >= n_triangles}
+    if not candidates:
+        return None
+    return list(candidates.keys())

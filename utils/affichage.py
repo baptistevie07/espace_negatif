@@ -71,13 +71,14 @@ class Affichage:
         if self.parametres.buttons[label].active:
             for i, point in enumerate(points):
                 x, y = point
-                if areas[i] == np.inf:
+                area = areas.get(i, None)
+                if area is None or area == np.inf:
                     continue
-                radius = int(ma.sqrt(areas[i])* self.ratio/10)
+                radius = int(ma.sqrt(area) * self.ratio / 5)
                 x = int(x * self.ratio)
                 y = self.height - int(y * self.ratio)
                 # Draw the circle
-                pg.draw.circle(self.screen, (0, 0, 255), (x, y), radius, 1)
+                pg.draw.circle(self.screen, (0, 0, 255), (x, y), radius, 3)
 
 
     def draw_triangle(self, points, tri,label):

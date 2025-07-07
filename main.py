@@ -1,6 +1,6 @@
 from utils.affichage import Affichage
 from utils.reception_osc import Reception_osc
-from utils.computation import computation
+from utils.computation import *
 import time
 import threading
 import pygame as pg
@@ -15,7 +15,7 @@ def afficher():
     visualiser.add_button("points", "Points",True)
     visualiser.add_button("triangles", "Triangles",True)
     visualiser.add_button("areas", "Aires")
-    visualiser.add_button("triangles_counts", "Compte")
+    visualiser.add_button("triangles_counts", "Comptes")
     visualiser.add_button("zones", "Zones",True)
     running=True
     while running and not stop_event.is_set():
@@ -33,12 +33,13 @@ def afficher():
         positions = osc.get_positions()
         ages = osc.get_ages()
         points,tri,triangle_counts,areas= computation(positions,ages,width, height)
+        candidates = personnes_centrales(tri, triangle_counts,areas,7)
         visualiser.clear()
         visualiser.draw_zones(points, tri, triangle_counts,2,"zones")
-        visualiser.draw_areas(points,areas,"areas")
         visualiser.draw_triangle(points, tri,"triangles")
         visualiser.draw_points(positions,"points")
         visualiser.draw_counts(points,triangle_counts,3,"triangles_counts")
+        visualiser.draw_areas(points,areas,"areas")
         visualiser.update()
     visualiser.quit()
 
