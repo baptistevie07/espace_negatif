@@ -149,7 +149,7 @@ class Computation():
             )
             if area > area_threshold:
                 empty_triangles[idx] = simplex.tolist()
-                idx += 1
+            idx += 1
         if self.empty_triangles != empty_triangles:
             self.empty_triangles = empty_triangles
             return empty_triangles
@@ -164,7 +164,7 @@ class Computation():
                 (triangle[2], triangle[0])]
 
     def expansion(self, ratio_threshold=1.5):
-        nb_iterations = int(time.time())% 10 
+        nb_iterations = int(time.time())% 20 
         if self.tri is None or self.points is None or self.empty_triangles is None:
             return None
         triangles = self.empty_triangles
