@@ -155,14 +155,24 @@ class Affichage:
                     pg.draw.rect(self.screen, (255, 255, 255), rect_bg)
                     self.screen.blit(text_surface, text_rect)
 
-    def draw_empty_triangles(self, computation, label):
+    def draw_empty_triangles(self, computation, type):
         """Draws the empty triangles."""
         """empty_triangles is a dictionary with keys as triangle indices and values as lists of [point1, point2, point3]"""
         if computation.empty_triangles is None or computation.points is None:
             return
-        if not self.parametres.buttons[label].active:
-            return
-        for idx, (p1, p2, p3) in computation.empty_triangles.items():
+        if type == "central":
+            triangles = computation.empty_triangles.values()
+            color = (180, 0, 0) 
+        elif type == "expansion":
+            if computation.region is None:
+                return
+            #On cherche les ids des points des triangles dans self.region
+            triangles = [computation.tri.simplices[simplex] for simplex in computation.region]
+            color= (180, 100, 100)
+            
+            
+       
+        for (p1,p2,p3) in triangles:
             if p1 is None or p2 is None or p3 is None:
                 continue
             # Normalize coordinates to fit within the screen dimensions
@@ -176,8 +186,19 @@ class Affichage:
             x3 = int(x3 * self.ratio)
             y3 = self.height - int(y3 * self.ratio)
             # Draw the triangle
-            pg.draw.polygon(self.screen, (180, 0, 0), [(x1, y1), (x2, y2), (x3, y3)])
+            pg.draw.polygon(self.screen, color, [(x1, y1), (x2, y2), (x3, y3)])
         #triangles : {idx: [area, point1, point2, point3]}
+
+    def draw_central_triangles(self, computation, label):
+        if not self.parametres.buttons[label].active:
+            return
+        self.draw_empty_triangles(computation, "central")
+
+    def draw_expansion_triangles(self, computation, label):
+        if not self.parametres.buttons[label].active:
+            return
+        self.draw_empty_triangles(computation, "expansion")
+
     def add_button(self, name, text, active=False):
         """Adds a button to the display."""
         self.parametres.add_button(name, text, self.width,active)

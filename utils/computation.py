@@ -11,6 +11,7 @@ class Computation():
         self.areas = None
         self.candidates = None
         self.empty_triangles = None
+        self.region = None
 
     def afficher(self, id_to_track, candidates, message):
         if not all(x in candidates for x in id_to_track): #inclusion
@@ -161,10 +162,13 @@ class Computation():
                 (triangle[1], triangle[2]),
                 (triangle[2], triangle[0])]
 
-    def expansion(self, triangles, tri, points, ratio_threshold=1.5):
-        if tri is None or points is None or triangles is None:
+    def expansion(self, ratio_threshold=1.5):
+        if self.tri is None or self.points is None or self.empty_triangles is None:
             return None
-        region = set(triangles.index())
+        triangles = self.empty_triangles
+        points = self.points
+        tri = self.tri
+        region = set(triangles.keys())
         visited = set()
         to_visit = list(region)
         while to_visit:
@@ -189,5 +193,7 @@ class Computation():
                 if d1 + d2 < ratio_threshold * edge:
                     region.add(neighbor_idx)
                     to_visit.append(neighbor_idx)
-        # Pas de variable de classe à mettre à jour ici (pas de self.region)
+        # Update the region attribute of the class
+        if self.region != region:
+            self.region = region
         return
