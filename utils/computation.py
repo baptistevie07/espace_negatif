@@ -2,6 +2,7 @@ import numpy as np
 from scipy.spatial import Delaunay
 from scipy.spatial import Voronoi
 from collections import defaultdict
+import time
 
 class Computation():
     def __init__(self):
@@ -163,6 +164,7 @@ class Computation():
                 (triangle[2], triangle[0])]
 
     def expansion(self, ratio_threshold=1.5):
+        nb_iterations = int(time.time())% 10 
         if self.tri is None or self.points is None or self.empty_triangles is None:
             return None
         triangles = self.empty_triangles
@@ -172,24 +174,33 @@ class Computation():
         visited = set()
         to_visit = list(region)
         while to_visit:
+            nb_iterations-=1
+            if nb_iterations <= 0:
+                break
             current_idx = to_visit.pop()
             visited.add(current_idx)
             current_triangle = tri.simplices[current_idx]
-            for i, neighbor_idx in enumerate(tri.neighbors[current_idx]):
+
+            for neighbor_pos, neighbor_idx in enumerate(tri.neighbors[current_idx]):
                 if neighbor_idx == -1 or neighbor_idx in visited or neighbor_idx in region:
                     continue
+
                 neighbor_triangle = tri.simplices[neighbor_idx]
-                shared = set(current_triangle) & set(neighbor_triangle)
-                if len(shared) != 2:
-                    continue
-                a, b = list(shared)
+
+                # Trouver l’arête commune via les indices partagés
+                shared_vertices = set(current_triangle) & set(neighbor_triangle)
+                if len(shared_vertices) != 2:
+                    continue  # doit partager une arête complète
+
+                a, b = list(shared_vertices)
                 edge = self.edge_length(points[a], points[b])
-                other_points = list(set(neighbor_triangle) - shared)
-                if len(other_points) != 1:
-                    continue
-                c = other_points[0]
-                d1 = self.edge_length(points[a], points[c])
-                d2 = self.edge_length(points[b], points[c])
+
+                # Sommet restant dans le triangle voisin
+                other = list(set(neighbor_triangle) - shared_vertices)[0]
+
+                d1 = self.edge_length(points[a], points[other])
+                d2 = self.edge_length(points[b], points[other])
+
                 if d1 + d2 < ratio_threshold * edge:
                     region.add(neighbor_idx)
                     to_visit.append(neighbor_idx)
