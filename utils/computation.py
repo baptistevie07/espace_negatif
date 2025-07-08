@@ -16,6 +16,7 @@ class Computation():
         self.candidates_triangles = None
         self.region_empty = None
         self.region_candidates = None
+        self.tree = None  # cKDTree pour les recherches de voisinage
 
     def afficher(self, id_to_track, candidates, message):
         if not all(x in candidates for x in id_to_track): #inclusion
@@ -23,6 +24,24 @@ class Computation():
             print("Perte de candidats : ", message, " : ", lost_ids)
             return [id for id in id_to_track if id in candidates]
         return id_to_track
+    def build_delaunay_neighbors(self,tri):
+        neighbors = defaultdict(set)
+        for triangle in tri.simplices:
+            for i in range(3):
+                a, b = triangle[i], triangle[(i + 1) % 3]
+                neighbors[a].add(b)
+                neighbors[b].add(a)
+        return neighbors
+    def has_distant_delaunay_neighbors(self,idx, points, delaunay_neighbors, min_dist=2.0, min_count=2):
+        count = 0
+        p = points[idx]
+        for neighbor_idx in delaunay_neighbors[idx]:
+            dist = np.linalg.norm(p - points[neighbor_idx])
+            if dist >= min_dist:
+                count += 1
+                if count >= min_count:
+                    return True
+        return False
 
     def computation(self, positions, ages, width, height):
         points = np.array([pos for pos in positions.values() if pos is not None])
@@ -63,6 +82,7 @@ class Computation():
              
         
         self.tri = tri
+        self.tree = cKDTree(points)
         #print(f"Triangulation Delaunay effectuée avec {len(tri.simplices)} triangles.")
              
         
@@ -142,16 +162,27 @@ class Computation():
             differences = np.diff(angles)
             if max(differences) < angle_max and 360 + angles[0] - angles[-1] < angle_max:
                 final_candidates.append(idx)
+            else:
+                if idx in id_to_track:
+                    print(f"Point {idx} rejeté pour angle supérieur à {angle_max}° : angle max = {max(differences)} ou {360 + angles[0] - angles[-1]}.")
         id_to_track = self.afficher(id_to_track, final_candidates, f"angle max {angle_max}°")
+
+        delaunay_neighbors = self.build_delaunay_neighbors(tri)
+        final2_candidates = []
+        for idx in final_candidates:
+            if self.has_distant_delaunay_neighbors(idx, points, delaunay_neighbors, min_dist=1.5, min_count=2):
+                final2_candidates.append(idx)
+        id_to_track = self.afficher(id_to_track, final2_candidates, f"voisins éloignés (distance >= 2.0)")
+
         
         candidates_triangles = {}
         idx=0
         for simplex in self.tri.simplices:
-            if any(vertex in final_candidates for vertex in simplex):
+            if any(vertex in final2_candidates for vertex in simplex):
                 candidates_triangles[idx] = simplex.tolist()
             idx+=1
         
-        self.candidates = final_candidates
+        self.candidates = final2_candidates
         
         self.candidates_triangles = candidates_triangles
         #print(candidates_triangles)
@@ -181,16 +212,16 @@ class Computation():
         #print(f"triangles vides trouvés : {empty_triangles}")
         # Parmis ces candidats, on va vérifier que tous les sommets ont au moins 2 voisins proches
         #print(f"Nombre de triangles vides trouvés : {len(empty_triangles)}")
-        if not empty_triangles:
+        if not empty_triangles or self.tree== None:
             self.empty_triangles = None
             return None
         filtered_empty_triangles = {}
-        tree = cKDTree(points)
+        
         for id,triangle in empty_triangles.items():
             potentiel = True
             for i in triangle:
                 # Chercher tous les points dans le rayon autour du sommet
-                neighbor_ids = tree.query_ball_point(points[i], r=radius)
+                neighbor_ids = self.tree.query_ball_point(points[i], r=radius)
                 
                 valid_neighbors = [nid for nid in neighbor_ids if nid != i]
                 
