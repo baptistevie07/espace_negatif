@@ -66,42 +66,28 @@ class Affichage:
                     y = self.height-int(y*self.ratio)
                     # Draw the point
                     pg.draw.circle(self.screen, (255, 255, 255), (x, y), 5)
-    def draw_areas(self, points,areas,label):
-        '''dessine un cercle autour de chaque point avec une taille proportionnelle à la surface'''
-        if self.parametres.buttons[label].active:
-            for i, point in enumerate(points):
-                x, y = point
-                area = areas.get(i, None)
-                if area is None or area == np.inf:
-                    continue
-                radius = int(ma.sqrt(area) * self.ratio / 5)
-                x = int(x * self.ratio)
-                y = self.height - int(y * self.ratio)
-                # Draw the circle
-                pg.draw.circle(self.screen, (0, 0, 255), (x, y), radius, 3)
-
-
-    def draw_triangle(self, points, tri,label):
-        if tri==None or points is None:
-            return
+    
+    def draw_triangle(self, computation, label):
         """Draws the triangles formed by the Delaunay triangulation."""
+        if computation.tri is None or computation.points is None:
+            return
         if self.parametres.buttons[label].active:
-            for simplex in tri.simplices:
-                pts = points[simplex]
+            for simplex in computation.tri.simplices:
+                pts = computation.points[simplex]
                 pts = [(int(pt[0]*self.ratio), self.height-int(pt[1]*self.ratio)) for pt in pts]
                 pts.append(pts[0])
                 pg.draw.lines(self.screen, (0, 255, 0), False, pts, 1)
 
-    def draw_counts(self, points, triangle_counts,number,label):
+    def draw_counts(self, computation, number, label):
         """Draws the number of triangles around each point, only the top 'number' points."""
-        if triangle_counts is None or points is None:
+        if computation.triangle_counts is None or computation.points is None:
             return
         if self.parametres.buttons[label].active:
             # Sort points by the number of triangles
-            sorted_points = sorted(triangle_counts.items(), key=lambda x: x[1], reverse=True)
+            sorted_points = sorted(computation.triangle_counts.items(), key=lambda x: x[1], reverse=True)
             top_points = [(idx, count) for idx, count in sorted_points if count >= number]
             for idx, (point_idx, count) in enumerate(top_points):
-                point = points[point_idx]
+                point = computation.points[point_idx]
                 x, y = point
                 x = int(x * self.ratio)
                 y = self.height - int(y * self.ratio)
@@ -112,31 +98,49 @@ class Affichage:
                 text_surface = font.render(str(count), True, (255, 0, 0))
                 text_rect = text_surface.get_rect(center=(x, y))
                 self.screen.blit(text_surface, text_rect)
-        
-    def draw_zones(self, points, tri, candidates, label):
+
+    def draw_areas(self, computation, label):
+        '''dessine un cercle autour de chaque point avec une taille proportionnelle à la surface'''
+        if self.parametres.buttons[label].active:
+            if computation.points is None or computation.areas is None:
+                return
+            for i, point in enumerate(computation.points):
+                x, y = point
+                area = computation.areas.get(i, None)
+                if area is None or area == np.inf:
+                    continue
+                radius = int(ma.sqrt(area) * self.ratio / 5)
+                x = int(x * self.ratio)
+                y = self.height - int(y * self.ratio)
+                # Draw the circle
+                pg.draw.circle(self.screen, (0, 0, 255), (x, y), radius, 3)
+
+    def draw_zones(self, computation, label):
         """Dessine les zones autour des triangles connectés aux points spécifiés dans 'candidates'."""
-        if tri is None or points is None or not candidates:
+        if computation.tri is None or computation.points is None or not computation.candidates:
             return
         if not self.parametres.buttons[label].active:
             return
-        candidate_set = set(candidates)
-        for simplex in tri.simplices:
+        candidate_set = set(computation.candidates)
+        for simplex in computation.tri.simplices:
             if any(vertex in candidate_set for vertex in simplex):
-                pts = points[simplex]
+                pts = computation.points[simplex]
                 pts = [(int(pt[0]*self.ratio), self.height-int(pt[1]*self.ratio)) for pt in pts]
                 pg.draw.polygon(self.screen, (255, 0, 0, 100), pts)  # zone rouge semi-transparente
         # Tracer un disque sur chaque candidat
         for idx in candidate_set:
-            if 0 <= idx < len(points):
-                x, y = points[idx]
+            if 0 <= idx < len(computation.points):
+                x, y = computation.points[idx]
                 x = int(x * self.ratio)
                 y = self.height - int(y * self.ratio)
                 pg.draw.circle(self.screen, (255, 255, 0), (x, y), 18, 0)  # disque jaune plein
 
-    def draw_ids(self, points, label):
+    def draw_ids(self, computation, label):
         """Draws the IDs of the objects at their positions."""
         if self.parametres.buttons[label].active:
-            for idx, pos in enumerate(points):
+            if computation.points is None:
+                return
+            for idx, pos in enumerate(computation.points):
                 if pos is not None:
                     x, y = pos
                     # Normalize coordinates to fit within the screen dimensions
@@ -150,20 +154,21 @@ class Affichage:
                     rect_bg = text_rect.inflate(6, 4)
                     pg.draw.rect(self.screen, (255, 255, 255), rect_bg)
                     self.screen.blit(text_surface, text_rect)
-    def draw_empty_triangles(self, empty_triangles,points,label):
+
+    def draw_empty_triangles(self, computation, label):
         """Draws the empty triangles."""
-        """empty_triangles is a dictionary with keys as triangle indices and values as lists of [area, point1, point2, point3]"""
-        if type(empty_triangles)=='NoneType' or points is None:
+        """empty_triangles is a dictionary with keys as triangle indices and values as lists of [point1, point2, point3]"""
+        if computation.empty_triangles is None or computation.points is None:
             return
         if not self.parametres.buttons[label].active:
             return
-        for idx, (area, p1, p2, p3) in empty_triangles.items():
+        for idx, (p1, p2, p3) in computation.empty_triangles.items():
             if p1 is None or p2 is None or p3 is None:
                 continue
             # Normalize coordinates to fit within the screen dimensions
-            x1, y1 = points[p1]
-            x2, y2 = points[p2]
-            x3, y3 = points[p3]
+            x1, y1 = computation.points[p1]
+            x2, y2 = computation.points[p2]
+            x3, y3 = computation.points[p3]
             x1 = int(x1 * self.ratio)
             y1 = self.height - int(y1 * self.ratio)
             x2 = int(x2 * self.ratio)
@@ -176,3 +181,11 @@ class Affichage:
     def add_button(self, name, text, active=False):
         """Adds a button to the display."""
         self.parametres.add_button(name, text, self.width,active)
+
+    def list_to_dict(self,triangles,points):
+        """Converts a list of triangles to a dictionary with triangle indices as keys and lists of points as values."""
+        triangles_dict = {}
+        for idx, triangle in enumerate(triangles):
+            if len(triangle) == 3:
+                triangles_dict[idx] = [points[triangle[0]], points[triangle[1]], points[triangle[2]]]
+        return triangles_dict
