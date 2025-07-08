@@ -38,7 +38,7 @@ def afficher():
         positions = osc.get_positions()
         ages = osc.get_ages()
         computation.computation(positions,ages,width, height)
-        computation.personnes_centrales(n_triangles=6,distance_min=1,angle_max=90)
+        computation.personnes_centrales(n_triangles=6,distance_min=1.5,angle_max=90)
         computation.empty_zones(area_threshold=2)
         computation.expansion_candidates(ratio_threshold=1.3)
         computation.expansion_empty(ratio_threshold=1.3)
