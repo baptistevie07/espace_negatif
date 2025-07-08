@@ -176,6 +176,15 @@ class Affichage:
             #On cherche les ids des points des triangles dans self.region
             triangles = [computation.tri.simplices[simplex] for simplex in computation.region_candidates]
             color= (180, 100, 100)
+        elif type == "final":
+            triangles =[]
+            if computation.region_empty:
+                triangles+=[computation.tri.simplices[simplex] for simplex in computation.region_empty]
+            if computation.region_candidates:
+                triangles+=[computation.tri.simplices[simplex] for simplex in computation.region_candidates]
+            if not triangles:
+                return
+            color = (128, 128, 128)
         else:
             print(f"Type '{type}' non reconnu pour draw_areas.")
             return
@@ -214,6 +223,11 @@ class Affichage:
     def add_button(self, name, text, active=False):
         """Adds a button to the display."""
         self.parametres.add_button(name, text, self.width,active)
+
+    def draw_final_zone(self, computation,label):
+        if not self.parametres.buttons[label].active:
+            return
+        self.draw_areas(computation, "final")
 
     def list_to_dict(self,triangles,points):
         """Converts a list of triangles to a dictionary with triangle indices as keys and lists of points as values."""

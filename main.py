@@ -22,6 +22,7 @@ def afficher():
     visualiser.add_button("areas", "Aires de Voronoi")
     visualiser.add_button("triangles_counts", "Nb voisins")
     visualiser.add_button("ids", "IDs")
+    visualiser.add_button("final", "Finalisation",False)
     running=True
     while running and not stop_event.is_set():
         for event in pg.event.get():
@@ -38,8 +39,8 @@ def afficher():
         positions = osc.get_positions()
         ages = osc.get_ages()
         computation.computation(positions,ages,width, height)
-        computation.personnes_centrales(n_triangles=6,distance_min=1.5,angle_max=90)
-        computation.empty_zones(area_threshold=2)
+        computation.personnes_centrales(n_triangles=6,distance_min=1,angle_max=90)
+        computation.empty_zones(area_threshold=2, radius=1.5)
         computation.expansion_candidates(ratio_threshold=1.3)
         computation.expansion_empty(ratio_threshold=1.3)
         visualiser.clear()
@@ -47,6 +48,7 @@ def afficher():
         visualiser.draw_empty(computation,"triangles_v")
         visualiser.draw_expansion_candidates(computation,"expansion_candidate")
         visualiser.draw_candidates(computation,"zones")
+        visualiser.draw_final_zone(computation,"final")
         visualiser.draw_triangle(computation,"triangles")
         visualiser.draw_points(positions,"points")
         visualiser.draw_counts(computation,5,"triangles_counts")

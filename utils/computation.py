@@ -180,6 +180,10 @@ class Computation():
             idx += 1
         #print(f"triangles vides trouvés : {empty_triangles}")
         # Parmis ces candidats, on va vérifier que tous les sommets ont au moins 2 voisins proches
+        #print(f"Nombre de triangles vides trouvés : {len(empty_triangles)}")
+        if not empty_triangles:
+            self.empty_triangles = None
+            return None
         filtered_empty_triangles = {}
         tree = cKDTree(points)
         for id,triangle in empty_triangles.items():
@@ -198,7 +202,10 @@ class Computation():
         if not filtered_empty_triangles:
             self.empty_triangles = None           
         self.empty_triangles = filtered_empty_triangles
-            
+        #print(f"Nombre de triangles vides filtrés : {len(self.empty_triangles)}")
+        if len(self.empty_triangles) == 0:
+            self.empty_triangles = None
+            return None
         return None
 
     def edge_length(self, p1, p2):
