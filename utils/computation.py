@@ -254,13 +254,14 @@ class Computation():
                 self.region_candidates = None
                 self.candidates = None
                 self.candidates_triangles = None
+                #print(f"Pas assez de triangles candidats pour l'expansion (seulement {len(region)} trouvés).")
             else:
                 self.region_candidates = region
-                
         elif type == "expansion_empty":
             if len(region) < nb_min_region:
                 self.region_empty = None
                 self.empty_triangles = None
+                #print(f"Pas assez de triangles vides pour l'expansion vide (seulement {len(region)} trouvés).")
             else:
                 self.region_empty = region
         return

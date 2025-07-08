@@ -151,9 +151,11 @@ class Affichage:
     def draw_areas(self, computation, type):
         """Draws the empty triangles."""
         """empty_triangles is a dictionary with keys as triangle indices and values as lists of [point1, point2, point3]"""
-        if computation.empty_triangles is None or computation.points is None:
+        if computation.points is None:
             return
         if type == "central":
+            if computation.empty_triangles is None:
+                return
             triangles = computation.empty_triangles.values()
             color = (0, 0, 255) 
         elif type == "candidates":
