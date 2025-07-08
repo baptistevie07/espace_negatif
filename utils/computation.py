@@ -12,7 +12,9 @@ class Computation():
         self.areas = None
         self.candidates = None
         self.empty_triangles = None
-        self.region = None
+        self.candidates_triangles = None
+        self.region_empty = None
+        self.region_candidates = None
 
     def afficher(self, id_to_track, candidates, message):
         if not all(x in candidates for x in id_to_track): #inclusion
@@ -34,7 +36,7 @@ class Computation():
         if len(points) < 3:
             print(f"\rPas assez de points uniques pour la triangulation (après filtrage).", end="")
             return None
-        points_a_exclure = [8]
+        points_a_exclure = []###############################################
         points = np.array([point for i, point in enumerate(points) if i not in points_a_exclure])
         tri = Delaunay(points)
         triangle_counts = defaultdict(int)
@@ -55,36 +57,45 @@ class Computation():
             else:
                 areas[idx] = np.inf
         # Mise à jour des variables de la classe
-        if not np.array_equal(self.points, points):
-            self.points = points
+       
+        self.points = points
              
-        if self.tri != tri:
-            self.tri = tri
+        
+        self.tri = tri
+        #print(f"Triangulation Delaunay effectuée avec {len(tri.simplices)} triangles.")
              
-        if self.triangle_counts != triangle_counts:
-            self.triangle_counts = triangle_counts
+        
+        self.triangle_counts = triangle_counts
              
-        if self.areas != areas:
-            self.areas = areas
+        
+        self.areas = areas
              
         
         return None
 
     def personnes_centrales(self, n_triangles, distance_min, angle_max, id_to_track=[]):
+        
         points = self.points
         tri = self.tri
         triangle_counts = self.triangle_counts
         areas = self.areas
 
         if tri is None or triangle_counts is None:
+            self.candidates = None
+            self.candidates_triangles = None
             return None
+        #print(f"debut personnes_centrales avec {len(self.tri.simplices)} triangles")
         candidates = {idx: count for idx, count in triangle_counts.items() if areas.get(idx, np.inf) != np.inf}
         id_to_track = self.afficher(id_to_track, candidates, "aire infinie")
         if not candidates:
+            self.candidates = None
+            self.candidates_triangles = None
             return None
         candidates = {idx: count for idx, count in candidates.items() if count >= n_triangles}
         id_to_track = self.afficher(id_to_track, candidates, f"moins de {n_triangles} triangles")
         if not candidates:
+            self.candidates = None
+            self.candidates_triangles = None
             return None
         candidate_indices = list(candidates.keys())
         filtered_candidates = []
@@ -102,12 +113,14 @@ class Computation():
         filtered_candidates = list(set(filtered_candidates))
         id_to_track = self.afficher(id_to_track, filtered_candidates, f"proche d'un autre point (distance < {distance_min})")
         if len(filtered_candidates) == 0:
+            self.candidates = None
+            self.candidates_triangles = None
             return None
-        if len(filtered_candidates) == 1:
-            if self.candidates != filtered_candidates:
-                self.candidates = filtered_candidates
-                return filtered_candidates
-            return None
+        #if len(filtered_candidates) == 1:
+         #   if self.candidates != filtered_candidates:
+          #      self.candidates = filtered_candidates
+           #     return filtered_candidates
+            #return None
         non_candidate_neighbors = []
         for idx in filtered_candidates:
             point = points[idx]
@@ -129,19 +142,33 @@ class Computation():
             if max(differences) < angle_max and 360 + angles[0] - angles[-1] < angle_max:
                 final_candidates.append(idx)
         id_to_track = self.afficher(id_to_track, final_candidates, f"angle max {angle_max}°")
-        if self.candidates != final_candidates:
-            self.candidates = final_candidates
-            return final_candidates if final_candidates else None
+        
+        candidates_triangles = {}
+        idx=0
+        for simplex in self.tri.simplices:
+            if any(vertex in final_candidates for vertex in simplex):
+                candidates_triangles[idx] = simplex.tolist()
+            idx+=1
+        
+        self.candidates = final_candidates
+        
+        self.candidates_triangles = candidates_triangles
+        #print(candidates_triangles)
+        #print("Nombre total de triangles", len(tri.simplices))
+        #print(f"Personnes centrales trouvées : {final_candidates}")
         return None
 
     def empty_zones(self, area_threshold=4):
+        
         points = self.points
         tri = self.tri
         if tri is None or points is None:
             return None
+        #print(f"debut empty_zones avec {len(self.tri.simplices)} triangles")
         empty_triangles = {}
         idx = 0
         for simplex in tri.simplices:
+            
             pts = points[simplex]
             area = 0.5 * np.abs(
                 np.dot([p[0] for p in pts], np.roll([p[1] for p in pts], 1)) -
@@ -150,9 +177,9 @@ class Computation():
             if area > area_threshold:
                 empty_triangles[idx] = simplex.tolist()
             idx += 1
-        if self.empty_triangles != empty_triangles:
-            self.empty_triangles = empty_triangles
-            return empty_triangles
+        #print(f"triangles vides trouvés : {empty_triangles}")
+        self.empty_triangles = empty_triangles
+            
         return None
 
     def edge_length(self, p1, p2):
@@ -163,20 +190,35 @@ class Computation():
                 (triangle[1], triangle[2]),
                 (triangle[2], triangle[0])]
 
-    def expansion(self, ratio_threshold=1.5):
-        nb_iterations = int(time.time())% 20 
-        if self.tri is None or self.points is None or self.empty_triangles is None:
+    def expansion(self, type,ratio_threshold,nb_min_region=4):
+        
+        #nb_iterations = int(time.time())% 20 
+        if type=="expansion_candidate":
+            if self.candidates_triangles is None or self.points is None or self.tri is None:
+                self.region_candidates = None
+                return None
+
+            triangles = self.candidates_triangles
+        elif type=="expansion_empty":
+            if self.empty_triangles is None or self.points is None or self.tri is None:
+                self.region_empty = None
+                return None
+            triangles = self.empty_triangles
+        else:
+            print(f"Type '{type}' non reconnu pour expansion.")
             return None
-        triangles = self.empty_triangles
+        #print(f"debut expansion de type {type} avec {len(self.tri.simplices)} triangles")
         points = self.points
         tri = self.tri
+        #print(f"triangles keys : {triangles.keys()}")
         region = set(triangles.keys())
         visited = set()
         to_visit = list(region)
+        #print(f"to visit :{to_visit}")
         while to_visit:
-            nb_iterations-=1
-            if nb_iterations <= 0:
-                break
+            #nb_iterations-=1
+            #if nb_iterations <= 0:
+                #break
             current_idx = to_visit.pop()
             visited.add(current_idx)
             current_triangle = tri.simplices[current_idx]
@@ -204,7 +246,26 @@ class Computation():
                 if d1 + d2 < ratio_threshold * edge:
                     region.add(neighbor_idx)
                     to_visit.append(neighbor_idx)
+                    #print(f"Ajout du triangle {neighbor_idx} à la région {type}")
         # Update the region attribute of the class
-        if self.region != region:
-            self.region = region
+        #print(f"Région trouvée de type {type} avec {region} triangles sur un total de {len(self.tri.simplices)} triangles.")
+        if type == "expansion_candidate":
+            if len(region) < nb_min_region:
+                self.region_candidates = None
+                self.candidates = None
+                self.candidates_triangles = None
+            else:
+                self.region_candidates = region
+                
+        elif type == "expansion_empty":
+            if len(region) < nb_min_region:
+                self.region_empty = None
+                self.empty_triangles = None
+            else:
+                self.region_empty = region
         return
+    
+    def expansion_candidates(self, ratio_threshold=1.3):
+        self.expansion("expansion_candidate", ratio_threshold)
+    def expansion_empty(self, ratio_threshold=1.3):
+        self.expansion("expansion_empty", ratio_threshold)

@@ -32,7 +32,7 @@ class Affichage:
         self.parametres.draw_params(self.screen, self.width, self.height)
         pg.display.flip()
         self.clock.tick(60)
-        print(f"\rFPS: {self.clock.get_fps():.2f}                                             ", end="")
+        print(f"\rFPS: {self.clock.get_fps():.2f}                                                                  ", end="")
 
     def quit(self):
         self.screen.fill((0, 0, 0))  # fond noir
@@ -99,7 +99,7 @@ class Affichage:
                 text_rect = text_surface.get_rect(center=(x, y))
                 self.screen.blit(text_surface, text_rect)
 
-    def draw_areas(self, computation, label):
+    def draw_point_areas(self, computation, label):
         '''dessine un cercle autour de chaque point avec une taille proportionnelle à la surface'''
         if self.parametres.buttons[label].active:
             if computation.points is None or computation.areas is None:
@@ -115,20 +115,13 @@ class Affichage:
                 # Draw the circle
                 pg.draw.circle(self.screen, (0, 0, 255), (x, y), radius, 3)
 
-    def draw_zones(self, computation, label):
+    def draw_candidates(self, computation, label):
         """Dessine les zones autour des triangles connectés aux points spécifiés dans 'candidates'."""
-        if computation.tri is None or computation.points is None or not computation.candidates:
+        if not self.parametres.buttons[label].active or computation.candidates is None:
             return
-        if not self.parametres.buttons[label].active:
-            return
-        candidate_set = set(computation.candidates)
-        for simplex in computation.tri.simplices:
-            if any(vertex in candidate_set for vertex in simplex):
-                pts = computation.points[simplex]
-                pts = [(int(pt[0]*self.ratio), self.height-int(pt[1]*self.ratio)) for pt in pts]
-                pg.draw.polygon(self.screen, (255, 0, 0, 100), pts)  # zone rouge semi-transparente
+        self.draw_areas(computation, "candidates")
         # Tracer un disque sur chaque candidat
-        for idx in candidate_set:
+        for idx in computation.candidates:
             if 0 <= idx < len(computation.points):
                 x, y = computation.points[idx]
                 x = int(x * self.ratio)
@@ -155,23 +148,35 @@ class Affichage:
                     pg.draw.rect(self.screen, (255, 255, 255), rect_bg)
                     self.screen.blit(text_surface, text_rect)
 
-    def draw_empty_triangles(self, computation, type):
+    def draw_areas(self, computation, type):
         """Draws the empty triangles."""
         """empty_triangles is a dictionary with keys as triangle indices and values as lists of [point1, point2, point3]"""
         if computation.empty_triangles is None or computation.points is None:
             return
         if type == "central":
             triangles = computation.empty_triangles.values()
-            color = (180, 0, 0) 
-        elif type == "expansion":
-            if computation.region is None:
+            color = (0, 0, 255) 
+        elif type == "candidates":
+            if computation.candidates_triangles is None:
                 return
             #On cherche les ids des points des triangles dans self.region
-            triangles = [computation.tri.simplices[simplex] for simplex in computation.region]
+            triangles = computation.candidates_triangles.values()
+            color= (255, 0, 0)
+        elif type == "expansion_empty":
+            if computation.region_empty is None:
+                return
+            #On cherche les ids des points des triangles dans self.region
+            triangles = [computation.tri.simplices[simplex] for simplex in computation.region_empty]
+            color= (100, 100, 255)
+        elif type == "expansion_candidates":
+            if computation.region_candidates is None:
+                return
+            #On cherche les ids des points des triangles dans self.region
+            triangles = [computation.tri.simplices[simplex] for simplex in computation.region_candidates]
             color= (180, 100, 100)
-            
-            
-       
+        else:
+            print(f"Type '{type}' non reconnu pour draw_areas.")
+            return
         for (p1,p2,p3) in triangles:
             if p1 is None or p2 is None or p3 is None:
                 continue
@@ -189,15 +194,20 @@ class Affichage:
             pg.draw.polygon(self.screen, color, [(x1, y1), (x2, y2), (x3, y3)])
         #triangles : {idx: [area, point1, point2, point3]}
 
-    def draw_central_triangles(self, computation, label):
+    def draw_empty(self, computation, label):
         if not self.parametres.buttons[label].active:
             return
-        self.draw_empty_triangles(computation, "central")
+        self.draw_areas(computation, "central")
 
-    def draw_expansion_triangles(self, computation, label):
+    def draw_expansion_empty(self, computation, label):
         if not self.parametres.buttons[label].active:
             return
-        self.draw_empty_triangles(computation, "expansion")
+        self.draw_areas(computation, "expansion_empty")
+
+    def draw_expansion_candidates(self, computation, label):
+        if not self.parametres.buttons[label].active:
+            return
+        self.draw_areas(computation, "expansion_candidates")
 
     def add_button(self, name, text, active=False):
         """Adds a button to the display."""
