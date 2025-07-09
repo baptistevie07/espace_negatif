@@ -201,7 +201,7 @@ class Computation():
             self.candidates = None
             self.candidates_triangles = None
             return None
-        weak_candidates = {idx: count for idx, count in candidates.items() if count == n_triangles-1}
+        weak_candidates = {idx: count for idx, count in candidates.items() if n_triangles-2<=count<n_triangles}
         candidates = {idx: count for idx, count in candidates.items() if count >= n_triangles}
         
         #Si un candidat faible est relié à un autre faible ou à un fort, on le garde
@@ -250,7 +250,7 @@ class Computation():
         delaunay_neighbors = self.neighbors
         final2_candidates = []
         for idx in final_candidates:
-            if self.has_distant_delaunay_neighbors(idx, points, delaunay_neighbors, min_dist=1.5, min_count=2):
+            if self.has_distant_delaunay_neighbors(idx, points, delaunay_neighbors, min_dist=2, min_count=2):
                 final2_candidates.append(idx)
         #On regarde les candidats non retenus, et on les garde si ils ont des voisins candidats qui ont été retenus
         for idx in final_candidates:
@@ -340,8 +340,31 @@ class Computation():
         return [(triangle[0], triangle[1]),
                 (triangle[1], triangle[2]),
                 (triangle[2], triangle[0])]
+    def compute_region_perimeter(self,region):
+        edge_counts = defaultdict(int)
+        
+        # Étape 1 : compter toutes les arêtes
+        for tri_idx in region:
+            triangle = self.tri.simplices[tri_idx]
+            edges = [
+                tuple(sorted((triangle[0], triangle[1]))),
+                tuple(sorted((triangle[1], triangle[2]))),
+                tuple(sorted((triangle[2], triangle[0]))),
+            ]
+            for edge in edges:
+                edge_counts[edge] += 1
 
-    def expansion(self, type,ratio_threshold,nb_min_region=4):
+        # Étape 2 : garder uniquement les arêtes uniques (bord)
+        border_edges = [edge for edge, count in edge_counts.items() if count == 1]
+
+        # Étape 3 : calculer la somme des longueurs
+        perimeter = 0
+        for a, b in border_edges:
+            perimeter += np.linalg.norm(self.points[a] - self.points[b])
+
+        return perimeter, border_edges
+
+    def expansion(self, type,ratio_threshold,min_density,nb_min_region=4):
         
         #nb_iterations = int(time.time())% 20 
         if type=="expansion_candidate":
@@ -400,8 +423,12 @@ class Computation():
                     #print(f"Ajout du triangle {neighbor_idx} à la région {type}")
         # Update the region attribute of the class
         #print(f"Région trouvée de type {type} avec {region} triangles sur un total de {len(self.tri.simplices)} triangles.")
+        #calcul de la ratio nb de personnes du contour / perimetre
+        perimeter, border_edges = self.compute_region_perimeter(region)
+        density = perimeter/len(border_edges) if perimeter > 0 else 0
+        #print(f"Densité de la région {type} : {density:.2f} (nombre de bords : {len(border_edges)}, périmètre : {perimeter:.2f})")
         if type == "expansion_candidate":
-            if len(region) < nb_min_region:
+            if len(region) < nb_min_region or density > min_density:
                 self.region_candidates = None
                 self.candidates = None
                 self.candidates_triangles = None
@@ -409,7 +436,7 @@ class Computation():
             else:
                 self.region_candidates = region
         elif type == "expansion_empty":
-            if len(region) < nb_min_region:
+            if len(region) < nb_min_region or density > min_density:
                 self.region_empty = None
                 self.empty_triangles = None
                 #print(f"Pas assez de triangles vides pour l'expansion vide (seulement {len(region)} trouvés).")
@@ -417,7 +444,7 @@ class Computation():
                 self.region_empty = region
         return
     
-    def expansion_candidates(self, ratio_threshold=1.3):
-        self.expansion("expansion_candidate", ratio_threshold)
-    def expansion_empty(self, ratio_threshold=1.3):
-        self.expansion("expansion_empty", ratio_threshold)
+    def expansion_candidates(self, ratio_threshold=1.3,min_density=1.5):
+        self.expansion("expansion_candidate", ratio_threshold,min_density)
+    def expansion_empty(self, ratio_threshold=1.3, min_density=1.5):
+        self.expansion("expansion_empty", ratio_threshold, min_density)
