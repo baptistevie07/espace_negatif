@@ -2,9 +2,10 @@ import pygame as pg
 import numpy as np
 import math as ma
 from utils.pg_utils.buttons import Parametres
+from utils.envoi_ndi import NDI_Sender
 
 class Affichage:
-    def __init__(self, width, height,nb_max_pixels=1000):
+    def __init__(self, width, height,sender=True,nb_max_pixels=1000):
         if width>height:
             self.width=int(nb_max_pixels)
             self.height=int(height*nb_max_pixels/width)
@@ -13,7 +14,14 @@ class Affichage:
             self.width=int(width*nb_max_pixels/height)
             self.height=int(nb_max_pixels)
             self.ratio = nb_max_pixels / height
+
         self.screen = pg.display.set_mode((self.width+250, self.height))
+        if sender:
+            self.screen_ndi = pg.Surface((self.width, self.height))
+            self.sender = NDI_Sender("Espace_Negatif", size=(self.width, self.height))
+        else:
+            self.screen_ndi = None
+            self.sender = None
         pg.display.set_caption("Visualisation des positions")
         self.clock = pg.time.Clock()
         self.running = True
@@ -24,6 +32,8 @@ class Affichage:
 
     def clear(self):
         self.screen.fill((0, 0, 0))
+        if self.screen_ndi:
+            self.screen_ndi.fill((0, 0, 0))
     
     def handle_event(self, event):
         self.parametres.handle_event(event)
@@ -31,6 +41,8 @@ class Affichage:
     def update(self):
         self.parametres.draw_params(self.screen, self.width, self.height)
         pg.display.flip()
+        if self.screen_ndi:
+            self.sender.send(self.screen_ndi)
         self.clock.tick(60)
         print(f"\rFPS: {self.clock.get_fps():.2f}                                                                  ", end="")
 
@@ -53,6 +65,8 @@ class Affichage:
                 self.height=int(self.nb_max_pixels)
                 self.ratio = self.nb_max_pixels / height
             self.screen = pg.display.set_mode((self.width+250, self.height))
+            if self.screen_ndi:
+                self.screen_ndi = pg.Surface((self.width, self.height))
 
     def draw_points(self, positions,label):
         '''positions is a dictionary with keys as object IDs and values as lists of [x, y] coordinates'''
@@ -203,6 +217,9 @@ class Affichage:
             y3 = self.height - int(y3 * self.ratio)
             # Draw the triangle
             pg.draw.polygon(self.screen, color, [(x1, y1), (x2, y2), (x3, y3)])
+            if self.screen_ndi and type == "final":
+                # Draw the triangle on the NDI surface
+                pg.draw.polygon(self.screen_ndi, (255,255,255), [(x1, y1), (x2, y2), (x3, y3)])
         #triangles : {idx: [area, point1, point2, point3]}
 
     def draw_empty(self, computation, label):

@@ -11,7 +11,7 @@ recept_port = 3335
 
 
 def afficher():
-    visualiser = Affichage(13.08, 7.77)
+    visualiser = Affichage(13.08, 7.77,sender=True)
     computation= Computation()
     visualiser.add_button("points", "Points",True)
     visualiser.add_button("triangles", "Triangles Delaunay",True)
