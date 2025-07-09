@@ -95,6 +95,93 @@ class Computation():
              
         
         return None
+    def filtrage_angulaire(self,filtered_candidates,angle_max,id_to_track):
+        # Étape 1 – identifier les candidats avec angles > 120°, à exclure du cœur mais à garder comme "contour"
+        contour_candidates = set()
+        core_candidates = []
+
+        for idx in filtered_candidates:
+            point = self.points[idx]
+            angles = []
+            other_indices = []
+
+            for other_idx, other_point in enumerate(self.points):
+                if other_idx == idx:
+                    continue
+                vector = other_point - point
+                angle = np.arctan2(vector[1], vector[0]) * 180 / np.pi + 180
+                angles.append(angle)
+                other_indices.append(other_idx)
+
+            if len(angles) < 2:
+                continue
+
+            angles = np.array(angles)
+            sorted_indices = np.argsort(angles)
+            sorted_angles = angles[sorted_indices]
+            sorted_neighbors = [other_indices[i] for i in sorted_indices]
+
+            diffs = np.diff(sorted_angles)
+            last_diff = 360 + sorted_angles[0] - sorted_angles[-1]
+            diffs = np.append(diffs, last_diff)
+
+            if np.max(diffs) > 120:
+                contour_candidates.add(idx)
+                if idx in id_to_track:
+                    print(f"Point {idx} dégradé en contour pour grand angle initial : {np.max(diffs):.1f}°")
+            else:
+                core_candidates.append(idx)
+        # Étape 2 – filtrage des core_candidates avec les points du contour comme "référence angulaire"
+        final_candidates = []
+
+        extended_non_candidates = (set(range(len(self.points))) - set(core_candidates)) | contour_candidates
+
+        for idx in core_candidates:
+            point = self.points[idx]
+            angles = []
+            other_indices = []
+
+            for other_idx in extended_non_candidates:
+                if other_idx == idx:
+                    continue
+                vector = self.points[other_idx] - point
+                angle = np.arctan2(vector[1], vector[0]) * 180 / np.pi + 180
+                angles.append(angle)
+                other_indices.append(other_idx)
+
+            if len(angles) < 2:
+                continue
+
+            angles = np.array(angles)
+            sorted_indices = np.argsort(angles)
+            sorted_angles = angles[sorted_indices]
+            sorted_neighbors = [other_indices[i] for i in sorted_indices]
+
+            diffs = np.diff(sorted_angles)
+            last_diff = 360 + sorted_angles[0] - sorted_angles[-1]
+            diffs = np.append(diffs, last_diff)
+
+            keep = True
+
+            for i, delta in enumerate(diffs):
+                if delta < angle_max:
+                    continue
+                a_idx = sorted_neighbors[i]
+                b_idx = sorted_neighbors[(i + 1) % len(sorted_neighbors)]
+
+                d_ab = np.linalg.norm(self.points[a_idx] - self.points[b_idx])
+                d_ai = np.linalg.norm(self.points[a_idx] - point)
+                d_bi = np.linalg.norm(self.points[b_idx] - point)
+
+                if not (d_ai < 0.9 * d_ab and d_bi < 0.9 * d_ab):
+                    keep = False
+                    if idx in id_to_track:
+                        print(f"Point {idx} rejeté pour angle suspect {delta:.1f}° entre {a_idx} et {b_idx}")
+                    break
+
+            if keep:
+                final_candidates.append(idx)
+        return final_candidates
 
     def personnes_centrales(self, n_triangles, distance_min, angle_max, id_to_track=[]):
         
@@ -154,68 +241,9 @@ class Computation():
           #      self.candidates = filtered_candidates
            #     return filtered_candidates
             #return None
-        non_candidate_neighbors = []
-        for idx in filtered_candidates:
-            point = points[idx]
-            for other_idx, other_point in enumerate(points):
-                if other_idx not in filtered_candidates:
-                    if other_idx not in non_candidate_neighbors:
-                        non_candidate_neighbors.append(other_idx)
-        final_candidates = []
-
-        for idx in filtered_candidates:
-            point = points[idx]
-            angles = []
-            vectors = []
-            other_indices = []
-
-            for other_idx in non_candidate_neighbors:
-                other_point = points[other_idx]
-                vector = other_point - point
-                angle = np.arctan2(vector[1], vector[0]) * 180 / np.pi + 180
-                angles.append(angle)
-                vectors.append(vector)
-                other_indices.append(other_idx)
-
-            if len(angles) < 2:
-                continue  # impossible de former un angle
-
-            angles = np.array(angles)
-            sorted_indices = np.argsort(angles)
-            sorted_angles = angles[sorted_indices]
-            sorted_neighbors = [other_indices[i] for i in sorted_indices]
-
-            diffs = np.diff(sorted_angles)
-            last_diff = 360 + sorted_angles[0] - sorted_angles[-1]
-            diffs = np.append(diffs, last_diff)
-
-            keep = True
-
-            for i, delta in enumerate(diffs):
-                if delta < angle_max:
-                    continue
-                if delta > 120:
-                    keep = False
-                    if idx in id_to_track:
-                        print(f"Point {idx} rejeté pour angle trop grand {delta:.1f}°")
-                    break
-                # Grands angles suspects → tester si géométriquement "fermés"
-                a_idx = sorted_neighbors[i]
-                b_idx = sorted_neighbors[(i + 1) % len(sorted_neighbors)]
-
-                d_ab = np.linalg.norm(points[a_idx] - points[b_idx])
-                d_ai = np.linalg.norm(points[a_idx] - point)
-                d_bi = np.linalg.norm(points[b_idx] - point)
-
-                # Tolérance souple (ex : 90% de la distance AB)
-                if not (d_ai < 0.9 * d_ab and d_bi < 0.9 * d_ab):
-                    keep = False
-                    if idx in id_to_track:
-                        print(f"Point {idx} rejeté pour angle suspect {delta:.1f}° entre {a_idx} et {b_idx}")
-                    break  # au moins un grand angle non tolérable → rejet
-
-            if keep:
-                final_candidates.append(idx)
+        
+        # Étape 3 – filtrage angulaire
+        final_candidates = self.filtrage_angulaire(filtered_candidates, angle_max, id_to_track)
 
         id_to_track = self.afficher(id_to_track, final_candidates, f"angle max {angle_max}°")
 
