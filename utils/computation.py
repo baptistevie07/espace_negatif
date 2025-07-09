@@ -150,21 +150,61 @@ class Computation():
                     if other_idx not in non_candidate_neighbors:
                         non_candidate_neighbors.append(other_idx)
         final_candidates = []
+
         for idx in filtered_candidates:
-            angles = []
             point = points[idx]
+            angles = []
+            vectors = []
+            other_indices = []
+
             for other_idx in non_candidate_neighbors:
                 other_point = points[other_idx]
                 vector = other_point - point
                 angle = np.arctan2(vector[1], vector[0]) * 180 / np.pi + 180
                 angles.append(angle)
-            angles = np.sort(np.array(angles))
-            differences = np.diff(angles)
-            if max(differences) < angle_max and 360 + angles[0] - angles[-1] < angle_max:
+                vectors.append(vector)
+                other_indices.append(other_idx)
+
+            if len(angles) < 2:
+                continue  # impossible de former un angle
+
+            angles = np.array(angles)
+            sorted_indices = np.argsort(angles)
+            sorted_angles = angles[sorted_indices]
+            sorted_neighbors = [other_indices[i] for i in sorted_indices]
+
+            diffs = np.diff(sorted_angles)
+            last_diff = 360 + sorted_angles[0] - sorted_angles[-1]
+            diffs = np.append(diffs, last_diff)
+
+            keep = True
+
+            for i, delta in enumerate(diffs):
+                if delta < angle_max:
+                    continue
+                if delta > 120:
+                    keep = False
+                    if idx in id_to_track:
+                        print(f"Point {idx} rejeté pour angle trop grand {delta:.1f}°")
+                    break
+                # Grands angles suspects → tester si géométriquement "fermés"
+                a_idx = sorted_neighbors[i]
+                b_idx = sorted_neighbors[(i + 1) % len(sorted_neighbors)]
+
+                d_ab = np.linalg.norm(points[a_idx] - points[b_idx])
+                d_ai = np.linalg.norm(points[a_idx] - point)
+                d_bi = np.linalg.norm(points[b_idx] - point)
+
+                # Tolérance souple (ex : 90% de la distance AB)
+                if not (d_ai < 0.9 * d_ab and d_bi < 0.9 * d_ab):
+                    keep = False
+                    if idx in id_to_track:
+                        print(f"Point {idx} rejeté pour angle suspect {delta:.1f}° entre {a_idx} et {b_idx}")
+                    break  # au moins un grand angle non tolérable → rejet
+
+            if keep:
                 final_candidates.append(idx)
-            else:
-                if idx in id_to_track:
-                    print(f"Point {idx} rejeté pour angle supérieur à {angle_max}° : angle max = {max(differences)} ou {360 + angles[0] - angles[-1]}.")
+
         id_to_track = self.afficher(id_to_track, final_candidates, f"angle max {angle_max}°")
 
         delaunay_neighbors = self.build_delaunay_neighbors(tri)
