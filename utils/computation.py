@@ -169,6 +169,7 @@ class Computation():
             for i, delta in enumerate(diffs):
                 if delta < angle_max:
                     continue
+                print(f"Point {idx} rejeté pour angle suspect {delta:.1f}°")
                 a_idx = sorted_neighbors[i]
                 b_idx = sorted_neighbors[(i + 1) % len(sorted_neighbors)]
 
@@ -180,6 +181,11 @@ class Computation():
                     keep = False
                     if idx in id_to_track:
                         print(f"Point {idx} rejeté pour angle suspect {delta:.1f}° entre {a_idx} et {b_idx}")
+                    break
+                if d_ab> 2.0:
+                    keep = False
+                    if idx in id_to_track:
+                        print(f"Point {idx} rejeté pour angle suspect {delta:.1f}° entre {a_idx} et {b_idx} (distance {d_ab:.2f} > 2.0)")
                     break
 
             if keep:
@@ -253,7 +259,7 @@ class Computation():
         delaunay_neighbors = self.neighbors
         final2_candidates = []
         for idx in final_candidates:
-            if self.has_distant_delaunay_neighbors(idx, points, delaunay_neighbors, min_dist=2, min_count=2):
+            if self.has_distant_delaunay_neighbors(idx, points, delaunay_neighbors, min_dist=1.5, min_count=2):
                 final2_candidates.append(idx)
         #On regarde les candidats non retenus, et on les garde si ils ont des voisins candidats qui ont été retenus
         for idx in final_candidates:
@@ -362,10 +368,13 @@ class Computation():
 
         # Étape 3 : calculer la somme des longueurs
         perimeter = 0
+        max_edge = 0
         for a, b in border_edges:
             perimeter += np.linalg.norm(self.points[a] - self.points[b])
+            if np.linalg.norm(self.points[a] - self.points[b]) > max_edge:
+                max_edge = np.linalg.norm(self.points[a] - self.points[b])
 
-        return perimeter, border_edges
+        return max_edge,perimeter, border_edges
 
     def expansion(self, type,ratio_threshold,min_density,nb_min_region=4):
         
@@ -427,11 +436,11 @@ class Computation():
         # Update the region attribute of the class
         #print(f"Région trouvée de type {type} avec {region} triangles sur un total de {len(self.tri.simplices)} triangles.")
         #calcul de la ratio nb de personnes du contour / perimetre
-        perimeter, border_edges = self.compute_region_perimeter(region)
+        max_edge, perimeter, border_edges = self.compute_region_perimeter(region)
         density = perimeter/len(border_edges) if perimeter > 0 else 0
         #print(f"Densité de la région {type} : {density:.2f} (nombre de bords : {len(border_edges)}, périmètre : {perimeter:.2f})")
         if type == "expansion_candidate":
-            if len(region) < nb_min_region or density > min_density:
+            if len(region) < nb_min_region or density > min_density or max_edge > 2:
                 self.region_candidates = None
                 self.candidates = None
                 self.candidates_triangles = None
@@ -439,12 +448,16 @@ class Computation():
             else:
                 self.region_candidates = region
         elif type == "expansion_empty":
-            if len(region) < nb_min_region or density > min_density:
+            if len(region) < nb_min_region or density > min_density or max_edge > 2:
                 self.region_empty = None
                 self.empty_triangles = None
                 #print(f"Pas assez de triangles vides pour l'expansion vide (seulement {len(region)} trouvés).")
             else:
                 self.region_empty = region
+        if len(region) < nb_min_region:print(f"Pas assez de triangles pour l'expansion {type} (seulement {len(region)} trouvés).")
+        if density>min_density:print(f"Densité trop élevée pour l'expansion {type} : {density:.2f}, min : {min_density} (périmètre : {perimeter:.2f}, nombre de bords : {len(border_edges)})")
+        if max_edge > 2:print(f"Expansion {type} rejetée car le côté maximal {max_edge:.2f} est supérieur à 2.")
+            
         return
     
     def expansion_candidates(self, ratio_threshold=1.3,min_density=1.5):
