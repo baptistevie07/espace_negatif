@@ -17,6 +17,7 @@ class Computation():
         self.region_empty = None
         self.region_candidates = None
         self.tree = None  # cKDTree pour les recherches de voisinage
+        self.neighbors = None  # Dictionnaire pour les voisins de Delaunay
 
     def afficher(self, id_to_track, candidates, message):
         if not all(x in candidates for x in id_to_track): #inclusion
@@ -83,6 +84,7 @@ class Computation():
         
         self.tri = tri
         self.tree = cKDTree(points)
+        self.neighbors = self.build_delaunay_neighbors(tri)
         #print(f"Triangulation Delaunay effectuée avec {len(tri.simplices)} triangles.")
              
         
@@ -112,7 +114,17 @@ class Computation():
             self.candidates = None
             self.candidates_triangles = None
             return None
+        weak_candidates = {idx: count for idx, count in candidates.items() if count == n_triangles-1}
         candidates = {idx: count for idx, count in candidates.items() if count >= n_triangles}
+        
+        #Si un candidat faible est relié à un autre faible ou à un fort, on le garde
+        for idx, count in weak_candidates.items():
+            for neighbor_idx in self.neighbors[idx]:
+                if neighbor_idx in candidates or neighbor_idx in weak_candidates:
+                    candidates[idx] = count
+                    if idx in id_to_track:
+                        print(f"Point {idx} conservé car relié à un autre candidat")
+                    break
         id_to_track = self.afficher(id_to_track, candidates, f"moins de {n_triangles} triangles")
         if not candidates:
             self.candidates = None
@@ -207,11 +219,25 @@ class Computation():
 
         id_to_track = self.afficher(id_to_track, final_candidates, f"angle max {angle_max}°")
 
-        delaunay_neighbors = self.build_delaunay_neighbors(tri)
+        delaunay_neighbors = self.neighbors
         final2_candidates = []
         for idx in final_candidates:
             if self.has_distant_delaunay_neighbors(idx, points, delaunay_neighbors, min_dist=1.5, min_count=2):
                 final2_candidates.append(idx)
+        #On regarde les candidats non retenus, et on les garde si ils ont des voisins candidats qui ont été retenus
+        for idx in final_candidates:
+            if idx in final2_candidates:
+                continue
+            # Vérifier si ce point a des voisins candidats qui ont été retenus
+            has_candidate_neighbor = False
+            for neighbor_idx in delaunay_neighbors[idx]:
+                if neighbor_idx in final2_candidates:
+                    has_candidate_neighbor = True
+                    break
+            if has_candidate_neighbor:
+                final2_candidates.append(idx)
+                if idx in id_to_track:
+                    print(f"Point {idx} conservé car voisin candidat retenu")
         id_to_track = self.afficher(id_to_track, final2_candidates, f"voisins éloignés (distance >= 2.0)")
 
         
