@@ -24,7 +24,10 @@ class Computation():
             lost_ids = [id for id in id_to_track if id not in candidates]
             print("Perte de candidats : ", message, " : ", lost_ids)
             return [id for id in id_to_track if id in candidates]
-        return id_to_track
+        if not candidates:
+            print(f"Aucun candidat trouvé pour {message}.")
+            return id_to_track
+        return []
     def build_delaunay_neighbors(self,tri):
         neighbors = defaultdict(set)
         for triangle in tri.simplices:
