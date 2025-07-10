@@ -41,7 +41,7 @@ def afficher():
         computation.computation(positions,ages,width, height)
         computation.personnes_centrales(n_triangles=8,distance_min=0.6,angle_max=75,id_to_track=[])
         computation.empty_zones(area_threshold=2, radius=1.5)
-        computation.expansion_candidates(ratio_threshold=1.4, min_density=1.5)
+        computation.expansion_candidates(ratio_threshold=1.4, min_density=1.2)
         computation.expansion_empty(ratio_threshold=1.4,min_density=1.5)
         visualiser.clear()
         visualiser.draw_expansion_empty(computation,"expansion_empty")

@@ -31,18 +31,7 @@ class NDI_Sender:
 
         self.video_frame.data = bgrx
         ndi.send_send_video_v2(self.sender, self.video_frame)
-        # Convertir en BGRX (ordre inversé + canal X plein)
-        
 
-        # Affecter au frame
-        #self.video_frame.data = bgrx_array.tobytes()
-
-        # Envoi
-        #ndi.send_send_video_v2(self.sender, self.video_frame)
-    def update_size(self, width, height):
-        """Met à jour la taille du sender NDI"""
-        self.width, self.height = 1000, 746  # NDI attend (hauteur, largeur) ########################
-        print(f"NDI sender updated size to: {self.width}x{self.height}")
         
 
     def __del__(self):

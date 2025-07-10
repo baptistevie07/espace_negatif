@@ -54,7 +54,7 @@ class Computation():
             print(f"\rPas assez de points uniques pour la triangulation (avant filtrage).", end="")
             return None
         mask = ((points[:, 0] >= 0) & (points[:, 0] <= width) &
-                (points[:, 1] >= 0) & (points[:, 1] <= height) & (ages > 30))
+                (points[:, 1] >= 0) & (points[:, 1] <= height) & (ages > 5))
         points = points[mask]
         points = np.unique(points, axis=0)
         if len(points) < 3:
@@ -169,7 +169,7 @@ class Computation():
             for i, delta in enumerate(diffs):
                 if delta < angle_max:
                     continue
-                print(f"Point {idx} rejeté pour angle suspect {delta:.1f}°")
+                #print(f"Point {idx} rejeté pour angle suspect {delta:.1f}°")
                 a_idx = sorted_neighbors[i]
                 b_idx = sorted_neighbors[(i + 1) % len(sorted_neighbors)]
 
@@ -440,7 +440,7 @@ class Computation():
         density = perimeter/len(border_edges) if perimeter > 0 else 0
         #print(f"Densité de la région {type} : {density:.2f} (nombre de bords : {len(border_edges)}, périmètre : {perimeter:.2f})")
         if type == "expansion_candidate":
-            if len(region) < nb_min_region or density > min_density or max_edge > 2:
+            if len(region) < nb_min_region or density > min_density or max_edge > 3 or len(self.candidates)*4 >= len(border_edges): #Il faut au moins 4 fois plus de bords que de candidats pour l'expansion
                 self.region_candidates = None
                 self.candidates = None
                 self.candidates_triangles = None
@@ -448,15 +448,15 @@ class Computation():
             else:
                 self.region_candidates = region
         elif type == "expansion_empty":
-            if len(region) < nb_min_region or density > min_density or max_edge > 2:
+            if len(region) < nb_min_region or density > min_density or max_edge > 3:
                 self.region_empty = None
                 self.empty_triangles = None
                 #print(f"Pas assez de triangles vides pour l'expansion vide (seulement {len(region)} trouvés).")
             else:
                 self.region_empty = region
-        if len(region) < nb_min_region:print(f"Pas assez de triangles pour l'expansion {type} (seulement {len(region)} trouvés).")
-        if density>min_density:print(f"Densité trop élevée pour l'expansion {type} : {density:.2f}, min : {min_density} (périmètre : {perimeter:.2f}, nombre de bords : {len(border_edges)})")
-        if max_edge > 2:print(f"Expansion {type} rejetée car le côté maximal {max_edge:.2f} est supérieur à 2.")
+        #if len(region) < nb_min_region:print(f"Pas assez de triangles pour l'expansion {type} (seulement {len(region)} trouvés).")
+        #if density>min_density:print(f"Densité trop élevée pour l'expansion {type} : {density:.2f}, min : {min_density} (périmètre : {perimeter:.2f}, nombre de bords : {len(border_edges)})")
+        #if max_edge > 2:print(f"Expansion {type} rejetée car le côté maximal {max_edge:.2f} est supérieur à 2.")
             
         return
     
