@@ -1,55 +1,64 @@
-import pygame as pg
-import numpy as np
-import NDIlib as ndi
+import sys
 import time
-if not ndi.initialize():
-    raise RuntimeError("NDI initialization failed")
+import numpy as np
+import pygame
+import NDIlib as ndi
 
-class NDI_Sender:
-    def __init__(self, name="Pygame NDI Stream", size=(1280, 720)):
-        self.size = (1250, 746)
+def main():
+    if not ndi.initialize():
+        return 0
 
-        # Création du sender NDI
-        send_settings = ndi.SendCreate()
-        send_settings.ndi_name = name.encode('utf-8')  # important : bytes
-        self.sender = ndi.send_create(send_settings)
+    # Création de l'émetteur NDI
+    send_settings = ndi.SendCreate()
+    send_settings.ndi_name = 'pygame-ndi'
+    ndi_send = ndi.send_create(send_settings)
+    if ndi_send is None:
+        return 0
 
-        if self.sender is None:
-            raise RuntimeError("Failed to create NDI sender")
+    # Initialiser Pygame
+    width, height = 640, 480
+    pygame.init()
+    screen = pygame.display.set_mode((width, height))
+    clock = pygame.time.Clock()
+    color = 0
 
-        self.img = np.ones((746,1250,  4), dtype=np.uint8)
+    # Créer un objet vidéo_frame réutilisable
+    video_frame = ndi.VideoFrameV2()
+    video_frame.FourCC = ndi.FOURCC_VIDEO_TYPE_BGRX
 
-        self.video_frame = ndi.VideoFrameV2()
+    start = time.time()
+    while time.time() - start < 60:  # pendant 60 secondes
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                ndi.send_destroy(ndi_send)
+                ndi.destroy()
+                pygame.quit()
+                return 0
 
-        self.video_frame.data = self.img
-        self.video_frame.FourCC = ndi.FOURCC_VIDEO_TYPE_BGRX
+        # Dessin simple
+        color = (color + 1) % 255
+        screen.fill((0, 0, 0))
+        pygame.draw.rect(screen, (0,0,color), (100, 100, 300, 200))
+        pygame.display.flip()
 
-    def send(self, screen: pg.Surface):
-        if screen.get_size() != self.size:
-            print(f"Resizing screen from {screen.get_size()} to {self.size}")
-        # Resize la surface pour matcher la taille attendue
-            screen = pg.transform.smoothscale(screen, self.size)
-        # Récupérer les pixels en RGB
-        rgb_bytes = pg.image.tostring(screen, "RGB")
-        rgb_array = np.frombuffer(rgb_bytes, dtype=np.uint8).reshape((self.size[1], self.size[0], 3))
+        # Convertir en image NumPy BGRX (NDI attend des strides alignés)
+        surf = pygame.display.get_surface()
+        arr = pygame.surfarray.pixels3d(surf)
+        arr = np.transpose(arr, (1, 0, 2))  # passer de (x, y, rgb) à (y, x, rgb)
+        bgrx = np.zeros((height, width, 4), dtype=np.uint8)
+        bgrx[:, :, :3] = arr[:, :, ::-1]  # inverse les canaux RGB → BGR
 
-        bgr_array = rgb_array[:, :, ::-1]
-        bgrx_array = np.concatenate([bgr_array, np.full((self.size[1], self.size[0], 1), 255, dtype=np.uint8)], axis=2)
+        video_frame.data = bgrx
 
-        idx = int(time.time()) % 2  # Pour alterner les couleurs
-        #self.img.fill(255 if idx % 2 else 0)
-        self.img[:] = bgrx_array
-        ndi.send_send_video_v2(self.sender, self.video_frame)
-        # Convertir en BGRX (ordre inversé + canal X plein)
-        
+        # Envoyer image
+        ndi.send_send_video_v2(ndi_send, video_frame)
 
-        # Affecter au frame
-        #self.video_frame.data = bgrx_array.tobytes()
+        clock.tick(30)
 
-        # Envoi
-        #ndi.send_send_video_v2(self.sender, self.video_frame)
+    ndi.send_destroy(ndi_send)
+    ndi.destroy()
+    pygame.quit()
+    return 0
 
-    def __del__(self):
-        if hasattr(self, 'sender'):
-            ndi.send_destroy(self.sender)
-        ndi.destroy()
+if __name__ == "__main__":
+    sys.exit(main())
