@@ -351,7 +351,7 @@ class Computation():
                 (triangle[2], triangle[0])]
     def compute_region_perimeter(self,region):
         edge_counts = defaultdict(int)
-        
+        total_area = 0
         # Étape 1 : compter toutes les arêtes
         for tri_idx in region:
             triangle = self.tri.simplices[tri_idx]
@@ -362,6 +362,12 @@ class Computation():
             ]
             for edge in edges:
                 edge_counts[edge] += 1
+            #calcul de l'aire du triangle
+            pts = self.points[triangle]
+            total_area += 0.5 * np.abs(
+                np.dot([p[0] for p in pts], np.roll([p[1] for p in pts], 1)) -
+                np.dot([p[1] for p in pts], np.roll([p[0] for p in pts], 1))
+            )
 
         # Étape 2 : garder uniquement les arêtes uniques (bord)
         border_edges = [edge for edge, count in edge_counts.items() if count == 1]
@@ -374,7 +380,7 @@ class Computation():
             if np.linalg.norm(self.points[a] - self.points[b]) > max_edge:
                 max_edge = np.linalg.norm(self.points[a] - self.points[b])
 
-        return max_edge,perimeter, border_edges
+        return max_edge,perimeter, border_edges,total_area
 
     def expansion(self, type,ratio_threshold,min_density,nb_min_region=4):
         
@@ -436,11 +442,14 @@ class Computation():
         # Update the region attribute of the class
         #print(f"Région trouvée de type {type} avec {region} triangles sur un total de {len(self.tri.simplices)} triangles.")
         #calcul de la ratio nb de personnes du contour / perimetre
-        max_edge, perimeter, border_edges = self.compute_region_perimeter(region)
+        max_edge, perimeter, border_edges,total_area = self.compute_region_perimeter(region)
         density = perimeter/len(border_edges) if perimeter > 0 else 0
         #print(f"Densité de la région {type} : {density:.2f} (nombre de bords : {len(border_edges)}, périmètre : {perimeter:.2f})")
         if type == "expansion_candidate":
-            if len(region) < nb_min_region or density > min_density or max_edge > 3 or len(self.candidates)*4 >= len(border_edges): #Il faut au moins 4 fois plus de bords que de candidats pour l'expansion
+            print(f"inegalité : {perimeter*perimeter:.2f} > 1.4*4*3.14*{total_area:.2f} = {1.4*4*3.14*total_area:.2f}")
+            if (len(region) < nb_min_region or density > min_density or max_edge > 3 
+            or len(self.candidates)*4 >= len(border_edges) or perimeter*perimeter>1.4*4*3.14*total_area): #Il faut au moins 4 fois plus de bords que de candidats pour l'expansion
+                print(f"inegalité : {perimeter*perimeter:.2f} > 1.4*4*3.14*{total_area:.2f} = {1.4*4*3.14*total_area:.2f}")
                 self.region_candidates = None
                 self.candidates = None
                 self.candidates_triangles = None
@@ -448,7 +457,7 @@ class Computation():
             else:
                 self.region_candidates = region
         elif type == "expansion_empty":
-            if len(region) < nb_min_region or density > min_density or max_edge > 3:
+            if len(region) < nb_min_region or density > min_density or max_edge > 3 or perimeter*perimeter>1.4*4*3.14*total_area:
                 self.region_empty = None
                 self.empty_triangles = None
                 #print(f"Pas assez de triangles vides pour l'expansion vide (seulement {len(region)} trouvés).")
