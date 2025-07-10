@@ -18,7 +18,7 @@ def main():
     # Initialiser Pygame
     width, height = 640, 480
     pygame.init()
-    screen = pygame.display.set_mode((width, height))
+    screen = pygame.Surface((width, height))
     clock = pygame.time.Clock()
     color = 0
 
@@ -39,11 +39,11 @@ def main():
         color = (color + 1) % 255
         screen.fill((0, 0, 0))
         pygame.draw.rect(screen, (0,0,color), (100, 100, 300, 200))
-        pygame.display.flip()
+        #pygame.display.flip()
 
         # Convertir en image NumPy BGRX (NDI attend des strides alignés)
-        surf = pygame.display.get_surface()
-        arr = pygame.surfarray.pixels3d(surf)
+        #surf = pygame.display.get_surface()
+        arr = pygame.surfarray.pixels3d(screen)
         arr = np.transpose(arr, (1, 0, 2))  # passer de (x, y, rgb) à (y, x, rgb)
         bgrx = np.zeros((height, width, 4), dtype=np.uint8)
         bgrx[:, :, :3] = arr[:, :, ::-1]  # inverse les canaux RGB → BGR

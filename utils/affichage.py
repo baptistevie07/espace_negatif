@@ -19,7 +19,7 @@ class Affichage:
         if sender:
             self.screen_ndi = pg.Surface((self.width, self.height))
             #self.screen_ndi = pg.display.set_mode((self.width, self.height))
-            self.sender = NDI_Sender("Espace_Negatif", size=(self.width, self.height))
+            self.sender = NDI_Sender("Espace_Negatif", self.width, self.height)
         else:
             self.screen_ndi = None
             self.sender = None
@@ -43,7 +43,7 @@ class Affichage:
         self.parametres.draw_params(self.screen, self.width, self.height)
         pg.display.flip()
         if self.screen_ndi:
-            self.sender.send(self.screen)
+            self.sender.send(self.screen_ndi)
         self.clock.tick(60)
         print(f"\rFPS: {self.clock.get_fps():.2f}                                                                  ", end="")
 
@@ -68,6 +68,7 @@ class Affichage:
             self.screen = pg.display.set_mode((self.width+250, self.height))
             if self.screen_ndi:
                 self.screen_ndi = pg.Surface((self.width, self.height))
+                print(f"New size: {self.width}x{self.height}, ratio: {self.ratio}")
 
     def draw_points(self, positions,label):
         '''positions is a dictionary with keys as object IDs and values as lists of [x, y] coordinates'''
