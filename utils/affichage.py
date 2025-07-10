@@ -68,6 +68,7 @@ class Affichage:
             self.screen = pg.display.set_mode((self.width+250, self.height))
             if self.screen_ndi:
                 self.screen_ndi = pg.Surface((self.width, self.height))
+
                 print(f"New size: {self.width}x{self.height}, ratio: {self.ratio}")
 
     def draw_points(self, positions,label):
@@ -192,7 +193,7 @@ class Affichage:
             #On cherche les ids des points des triangles dans self.region
             triangles = [computation.tri.simplices[simplex] for simplex in computation.region_candidates]
             color= (180, 100, 100)
-        elif type == "final":
+        elif type == "final" or type == "ndi":
             triangles =[]
             if computation.region_empty:
                 triangles+=[computation.tri.simplices[simplex] for simplex in computation.region_empty]
@@ -217,11 +218,13 @@ class Affichage:
             y2 = self.height - int(y2 * self.ratio)
             x3 = int(x3 * self.ratio)
             y3 = self.height - int(y3 * self.ratio)
-            # Draw the triangle
-            pg.draw.polygon(self.screen, color, [(x1, y1), (x2, y2), (x3, y3)])
-            if self.screen_ndi and type == "final":
+            
+            if type == "ndi":
                 # Draw the triangle on the NDI surface
                 pg.draw.polygon(self.screen_ndi, (255,255,255), [(x1, y1), (x2, y2), (x3, y3)])
+            else:
+                # Draw the triangle
+                pg.draw.polygon(self.screen, color, [(x1, y1), (x2, y2), (x3, y3)])
         #triangles : {idx: [area, point1, point2, point3]}
 
     def draw_empty(self, computation, label):
@@ -244,6 +247,8 @@ class Affichage:
         self.parametres.add_button(name, text, self.width,active)
 
     def draw_final_zone(self, computation,label):
+        if self.screen_ndi:
+            self.draw_areas(computation, "ndi")
         if not self.parametres.buttons[label].active:
             return
         self.draw_areas(computation, "final")

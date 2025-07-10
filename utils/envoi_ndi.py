@@ -6,7 +6,7 @@ if not ndi.initialize():
     raise RuntimeError("NDI initialization failed")
 
 class NDI_Sender:
-    def __init__(self, name="Pygame NDI Stream", width=1000, height=594):
+    def __init__(self, name="Pygame NDI Stream", width=1000, height=746):
         self.height, self.width = height, width  # NDI attend (hauteur, largeur)
         print(f"Creating NDI sender with name: {name}, size: ({self.width}, {self.height})")
 
@@ -22,14 +22,11 @@ class NDI_Sender:
         self.video_frame.FourCC = ndi.FOURCC_VIDEO_TYPE_BGRX
 
     def send(self, screen: pg.Surface):
-        if screen.get_size() != (self.width, self.height):
-            print(f"Resizing screen from {screen.get_size()} to {(self.width, self.height)}")
-        # Resize la surface pour matcher la taille attendue
-            screen = pg.transform.smoothscale(screen,( self.height, self.width))
-        # Récupérer les pixels en RGB
+        
+        self.width,self.height=screen.get_size()
         arr = pg.surfarray.pixels3d(screen)
         arr = np.transpose(arr, (1, 0, 2))  # passer de (x, y, rgb) à (y, x, rgb)
-        bgrx = np.zeros((self.width, self.height, 4), dtype=np.uint8)
+        bgrx = np.zeros((self.height, self.width, 4), dtype=np.uint8)
         bgrx[:, :, :3] = arr[:, :, ::-1]  # inverse les canaux RGB → BGR
 
         self.video_frame.data = bgrx
@@ -42,6 +39,11 @@ class NDI_Sender:
 
         # Envoi
         #ndi.send_send_video_v2(self.sender, self.video_frame)
+    def update_size(self, width, height):
+        """Met à jour la taille du sender NDI"""
+        self.width, self.height = 1000, 746  # NDI attend (hauteur, largeur) ########################
+        print(f"NDI sender updated size to: {self.width}x{self.height}")
+        
 
     def __del__(self):
         if hasattr(self, 'sender'):
