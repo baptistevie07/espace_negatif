@@ -169,7 +169,7 @@ class Computation():
             for i, delta in enumerate(diffs):
                 if delta < angle_max:
                     continue
-                print(f"Point {idx} rejeté pour angle suspect {delta:.1f}°")
+                #print(f"Point {idx} rejeté pour angle suspect {delta:.1f}°")
                 a_idx = sorted_neighbors[i]
                 b_idx = sorted_neighbors[(i + 1) % len(sorted_neighbors)]
 
@@ -454,9 +454,9 @@ class Computation():
                 #print(f"Pas assez de triangles vides pour l'expansion vide (seulement {len(region)} trouvés).")
             else:
                 self.region_empty = region
-        if len(region) < nb_min_region:print(f"Pas assez de triangles pour l'expansion {type} (seulement {len(region)} trouvés).")
-        if density>min_density:print(f"Densité trop élevée pour l'expansion {type} : {density:.2f}, min : {min_density} (périmètre : {perimeter:.2f}, nombre de bords : {len(border_edges)})")
-        if max_edge > 2:print(f"Expansion {type} rejetée car le côté maximal {max_edge:.2f} est supérieur à 2.")
+        #if len(region) < nb_min_region:print(f"Pas assez de triangles pour l'expansion {type} (seulement {len(region)} trouvés).")
+        #if density>min_density:print(f"Densité trop élevée pour l'expansion {type} : {density:.2f}, min : {min_density} (périmètre : {perimeter:.2f}, nombre de bords : {len(border_edges)})")
+        #if max_edge > 2:print(f"Expansion {type} rejetée car le côté maximal {max_edge:.2f} est supérieur à 2.")
             
         return
     
