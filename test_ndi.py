@@ -1,47 +1,64 @@
-import pygame
-import numpy as np
+import sys
 import time
+import numpy as np
+import pygame
 import NDIlib as ndi
 
-# --- Initialisation NDI ---
-#if not ndi.util.initialize():
- #   raise Exception("NDI library not initialized")
+def main():
+    if not ndi.initialize():
+        return 0
 
-sender = ndi.send.Sender("Pygame NDI Stream")
+    # Création de l'émetteur NDI
+    send_settings = ndi.SendCreate()
+    send_settings.ndi_name = 'pygame-ndi'
+    ndi_send = ndi.send_create(send_settings)
+    if ndi_send is None:
+        return 0
 
-# --- Initialisation Pygame ---
-width, height = 640, 480
-pygame.init()
-screen = pygame.display.set_mode((width, height))
-clock = pygame.time.Clock()
+    # Initialiser Pygame
+    width, height = 640, 480
+    pygame.init()
+    screen = pygame.display.set_mode((width, height))
+    clock = pygame.time.Clock()
+    color = 0
 
-running = True
-color_val = 0
+    # Créer un objet vidéo_frame réutilisable
+    video_frame = ndi.VideoFrameV2()
+    video_frame.FourCC = ndi.FOURCC_VIDEO_TYPE_BGRX
 
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+    start = time.time()
+    while time.time() - start < 60:  # pendant 60 secondes
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                ndi.send_destroy(ndi_send)
+                ndi.destroy()
+                pygame.quit()
+                return 0
 
-    # Dessin : rectangle avec couleur changeante
-    screen.fill((0, 0, 0))
-    color_val = (color_val + 1) % 255
-    pygame.draw.rect(screen, (color_val, 100, 255 - color_val), (100, 100, 200, 150))
+        # Dessin simple
+        color = (color + 1) % 255
+        screen.fill((0, 0, 0))
+        pygame.draw.rect(screen, (0,0,color), (100, 100, 300, 200))
+        pygame.display.flip()
 
-    # Convertir la surface en image NumPy (RGB)
-    surface = pygame.display.get_surface()
-    array = pygame.surfarray.array3d(surface)
-    array = np.rot90(array)  # pour corriger orientation
-    array = np.fliplr(array)  # corriger mirroring
-    array = np.ascontiguousarray(array)
+        # Convertir en image NumPy BGRX (NDI attend des strides alignés)
+        surf = pygame.display.get_surface()
+        arr = pygame.surfarray.pixels3d(surf)
+        arr = np.transpose(arr, (1, 0, 2))  # passer de (x, y, rgb) à (y, x, rgb)
+        bgrx = np.zeros((height, width, 4), dtype=np.uint8)
+        bgrx[:, :, :3] = arr[:, :, ::-1]  # inverse les canaux RGB → BGR
 
-    # Envoyer via NDI
-    sender.send_video(array)
+        video_frame.data = bgrx
 
-    pygame.display.flip()
-    clock.tick(30)  # Limite à 30 FPS
+        # Envoyer image
+        ndi.send_send_video_v2(ndi_send, video_frame)
 
-# --- Nettoyage ---
-pygame.quit()
-sender.close()
-ndi.util.destroy()
+        clock.tick(30)
+
+    ndi.send_destroy(ndi_send)
+    ndi.destroy()
+    pygame.quit()
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())
