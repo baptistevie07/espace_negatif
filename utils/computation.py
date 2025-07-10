@@ -291,6 +291,7 @@ class Computation():
         #print(candidates_triangles)
         #print("Nombre total de triangles", len(tri.simplices))
         #print(f"Personnes centrales trouvées : {final_candidates}")
+        
         return None
 
     def empty_zones(self, area_threshold=4, radius=1):
@@ -382,7 +383,7 @@ class Computation():
 
         return max_edge,perimeter, border_edges,total_area
 
-    def expansion(self, type,ratio_threshold,min_density,nb_min_region=4):
+    def expansion(self, type,ratio_threshold,min_density,nb_min_region=4,ratio_area=1.4):
         
         #nb_iterations = int(time.time())% 20 
         if type=="expansion_candidate":
@@ -446,10 +447,11 @@ class Computation():
         density = perimeter/len(border_edges) if perimeter > 0 else 0
         #print(f"Densité de la région {type} : {density:.2f} (nombre de bords : {len(border_edges)}, périmètre : {perimeter:.2f})")
         if type == "expansion_candidate":
-            print(f"inegalité : {perimeter*perimeter:.2f} > 1.4*4*3.14*{total_area:.2f} = {1.4*4*3.14*total_area:.2f}")
+            #print(f"inegalité : {perimeter*perimeter:.2f} > 1.4*4*3.14*{total_area:.2f} = {1.4*4*3.14*total_area:.2f}")
             if (len(region) < nb_min_region or density > min_density or max_edge > 3 
-            or len(self.candidates)*4 >= len(border_edges) or perimeter*perimeter>1.4*4*3.14*total_area): #Il faut au moins 4 fois plus de bords que de candidats pour l'expansion
-                print(f"inegalité : {perimeter*perimeter:.2f} > 1.4*4*3.14*{total_area:.2f} = {1.4*4*3.14*total_area:.2f}")
+            or len(self.candidates)*4 >= len(border_edges) or perimeter*perimeter>ratio_area*4*3.14*total_area): #Il faut au moins 4 fois plus de bords que de candidats pour l'expansion
+                if  perimeter*perimeter>ratio_area*4*3.14*total_area:
+                    print(f"inegalité : {perimeter*perimeter:.2f} > {ratio_area}*4*3.14*{total_area:.2f} = {ratio_area*4*3.14*total_area:.2f}")
                 self.region_candidates = None
                 self.candidates = None
                 self.candidates_triangles = None
@@ -457,7 +459,7 @@ class Computation():
             else:
                 self.region_candidates = region
         elif type == "expansion_empty":
-            if len(region) < nb_min_region or density > min_density or max_edge > 3 or perimeter*perimeter>1.4*4*3.14*total_area:
+            if len(region) < nb_min_region or density > min_density or max_edge > 3 or perimeter*perimeter>ratio_area*4*3.14*total_area:
                 self.region_empty = None
                 self.empty_triangles = None
                 #print(f"Pas assez de triangles vides pour l'expansion vide (seulement {len(region)} trouvés).")
@@ -469,7 +471,7 @@ class Computation():
             
         return
     
-    def expansion_candidates(self, ratio_threshold=1.3,min_density=1.5):
-        self.expansion("expansion_candidate", ratio_threshold,min_density)
-    def expansion_empty(self, ratio_threshold=1.3, min_density=1.5):
-        self.expansion("expansion_empty", ratio_threshold, min_density)
+    def expansion_candidates(self, ratio_threshold=1.3,min_density=1.5, nb_min_region=4, ratio_area=1.4):
+        self.expansion("expansion_candidate", ratio_threshold,min_density, nb_min_region, ratio_area)
+    def expansion_empty(self, ratio_threshold=1.3, min_density=1.5, nb_min_region=4, ratio_area=1.4):
+        self.expansion("expansion_empty", ratio_threshold, min_density, nb_min_region, ratio_area)
