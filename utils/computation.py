@@ -4,6 +4,7 @@ from scipy.spatial import Voronoi
 from scipy.spatial import cKDTree
 from collections import defaultdict
 import time
+from itertools import combinations
 
 class Computation():
     def __init__(self):
@@ -20,7 +21,11 @@ class Computation():
         self.neighbors = None  # Dictionnaire pour les voisins de Delaunay
 
     def afficher(self, id_to_track, candidates, message):
-        if not all(x in candidates for x in id_to_track): #inclusion
+        #si candidates est un dictionnaire, on prend les clés et on en fait des int
+        if isinstance(candidates, dict):
+            candidates = list(candidates.keys())
+        # Now id_to_track is a list
+        if not all(x in candidates for x in id_to_track):  # inclusion
             lost_ids = [id for id in id_to_track if id not in candidates]
             print("Perte de candidats : ", message, " : ", lost_ids)
             return [id for id in id_to_track if id in candidates]
@@ -46,6 +51,30 @@ class Computation():
                 if count >= min_count:
                     return True
         return False
+    def compte_voisins_communs(self,triangle_counts, distance_threshold=0.4):
+        # Étape 1 — associer à chaque point la liste des triangles auxquels il appartient
+        point_to_triangles = defaultdict(set)
+
+        for i, tri_pts in enumerate(self.tri.simplices):
+            for pt in tri_pts:
+                point_to_triangles[pt].add(i)
+
+        # Étape 2 — préparer adjusted_counts (copie initiale)
+        adjusted_counts = {idx: len(point_to_triangles[idx]) for idx in triangle_counts}
+
+        # Étape 3 — fusionner les voisins proches
+        indices = list(adjusted_counts.keys())
+
+        for a, b in combinations(indices, 2):
+            #print(f"Comparaison des points {a} et {b} avec distance {np.linalg.norm(self.points[a] - self.points[b]):.2f}")
+            if np.linalg.norm(self.points[a] - self.points[b]) < distance_threshold:
+                # union des triangles
+                union_tris = point_to_triangles[a] | point_to_triangles[b]
+                new_count = len(union_tris)
+                #print(f"Points {a} et {b} fusionnés, nouveau compte : {new_count} (ancien : {adjusted_counts[a]}, {adjusted_counts[b]})")
+                adjusted_counts[a] = max(adjusted_counts[a], new_count)
+                adjusted_counts[b] = max(adjusted_counts[b], new_count)
+        return adjusted_counts
 
     def computation(self, positions, ages, width, height):
         points = np.array([pos for pos in positions.values() if pos is not None])
@@ -102,7 +131,6 @@ class Computation():
         # Étape 1 – identifier les candidats avec angles > 120°, à exclure du cœur mais à garder comme "contour"
         contour_candidates = set()
         core_candidates = []
-
         for idx in filtered_candidates:
             point = self.points[idx]
             angles = []
@@ -165,7 +193,7 @@ class Computation():
             diffs = np.append(diffs, last_diff)
 
             keep = True
-
+            
             for i, delta in enumerate(diffs):
                 if delta < angle_max:
                     continue
@@ -176,20 +204,42 @@ class Computation():
                 d_ab = np.linalg.norm(self.points[a_idx] - self.points[b_idx])
                 d_ai = np.linalg.norm(self.points[a_idx] - point)
                 d_bi = np.linalg.norm(self.points[b_idx] - point)
-
                 if not (d_ai < 0.9 * d_ab and d_bi < 0.9 * d_ab):
                     keep = False
                     if idx in id_to_track:
                         print(f"Point {idx} rejeté pour angle suspect {delta:.1f}° entre {a_idx} et {b_idx}")
                     break
-                if d_ab> 2.0:
+                if d_ab> 2.5:
                     keep = False
                     if idx in id_to_track:
-                        print(f"Point {idx} rejeté pour angle suspect {delta:.1f}° entre {a_idx} et {b_idx} (distance {d_ab:.2f} > 2.0)")
+                        print(f"Point {idx} rejeté pour angle suspect {delta:.1f}° entre {a_idx} et {b_idx} (distance {d_ab:.2f} > 2.5)")
                     break
 
             if keep:
                 final_candidates.append(idx)
+        # On a trouvé des candidats, si deux sont très proches, si un est gardé, on garde l'autre
+        if not final_candidates:
+            return []
+        if  len(final_candidates) == len(filtered_candidates):
+            return final_candidates
+        point_to_triangles = defaultdict(set)
+
+        for i, tri_pts in enumerate(self.tri.simplices):
+            for pt in tri_pts:
+                point_to_triangles[pt].add(i)
+
+        for a, b in combinations(filtered_candidates, 2):
+            #print(f"Comparaison des points {a} et {b} avec distance {np.linalg.norm(self.points[a] - self.points[b]):.2f}")
+            if np.linalg.norm(self.points[a] - self.points[b]) < 0.5:
+                print(f"Points {a} et {b} très proches, vérification des triangles")
+                if a in final_candidates and b not in final_candidates:
+                    final_candidates.append(b)
+                    if b in id_to_track:
+                        print(f"Point {b} conservé car proche de {a}")
+                elif b in final_candidates and a not in final_candidates:
+                    final_candidates.append(a)
+                    if a in id_to_track:
+                        print(f"Point {a} conservé car proche de {b}")
         return final_candidates
 
     def personnes_centrales(self, n_triangles, distance_min, angle_max, id_to_track=[]):
@@ -204,15 +254,19 @@ class Computation():
             self.candidates_triangles = None
             return None
         #print(f"debut personnes_centrales avec {len(self.tri.simplices)} triangles")
-        candidates = {idx: count for idx, count in triangle_counts.items() if areas.get(idx, np.inf) != np.inf}
+        #si deux candidats sont très proches, alors on leur donne à tous les deux le nombre de voisins commun
+        shared_counts = self.compte_voisins_communs(triangle_counts,distance_threshold=0.4)
+        candidates = {idx: count for idx, count in shared_counts.items() if areas.get(idx, np.inf) != np.inf}
+        
         id_to_track = self.afficher(id_to_track, candidates, "aire infinie")
         if not candidates:
             self.candidates = None
             self.candidates_triangles = None
             return None
-        weak_candidates = {idx: count for idx, count in candidates.items() if n_triangles-2<=count<n_triangles}
+        weak_candidates = {idx: count for idx, count in shared_counts.items() if n_triangles-2<=count<n_triangles}
+        #print("weak",weak_candidates)
         candidates = {idx: count for idx, count in candidates.items() if count >= n_triangles}
-        
+        #print("central",candidates)
         #Si un candidat faible est relié à un autre faible ou à un fort, on le garde
         for idx, count in weak_candidates.items():
             for neighbor_idx in self.neighbors[idx]:
@@ -222,6 +276,7 @@ class Computation():
                         print(f"Point {idx} conservé car relié à un autre candidat")
                     break
         id_to_track = self.afficher(id_to_track, candidates, f"moins de {n_triangles} triangles")
+        
         if not candidates:
             self.candidates = None
             self.candidates_triangles = None
@@ -255,7 +310,6 @@ class Computation():
         final_candidates = self.filtrage_angulaire(filtered_candidates, angle_max, id_to_track)
 
         id_to_track = self.afficher(id_to_track, final_candidates, f"angle max {angle_max}°")
-
         delaunay_neighbors = self.neighbors
         final2_candidates = []
         for idx in final_candidates:
@@ -288,9 +342,7 @@ class Computation():
         self.candidates = final2_candidates
         
         self.candidates_triangles = candidates_triangles
-        #print(candidates_triangles)
-        #print("Nombre total de triangles", len(tri.simplices))
-        #print(f"Personnes centrales trouvées : {final_candidates}")
+        
         return None
 
     def empty_zones(self, area_threshold=4, radius=1):
@@ -351,7 +403,7 @@ class Computation():
                 (triangle[2], triangle[0])]
     def compute_region_perimeter(self,region):
         edge_counts = defaultdict(int)
-        
+        total_area = 0
         # Étape 1 : compter toutes les arêtes
         for tri_idx in region:
             triangle = self.tri.simplices[tri_idx]
@@ -362,6 +414,12 @@ class Computation():
             ]
             for edge in edges:
                 edge_counts[edge] += 1
+            #calcul de l'aire du triangle
+            pts = self.points[triangle]
+            total_area += 0.5 * np.abs(
+                np.dot([p[0] for p in pts], np.roll([p[1] for p in pts], 1)) -
+                np.dot([p[1] for p in pts], np.roll([p[0] for p in pts], 1))
+            )
 
         # Étape 2 : garder uniquement les arêtes uniques (bord)
         border_edges = [edge for edge, count in edge_counts.items() if count == 1]
@@ -374,16 +432,16 @@ class Computation():
             if np.linalg.norm(self.points[a] - self.points[b]) > max_edge:
                 max_edge = np.linalg.norm(self.points[a] - self.points[b])
 
-        return max_edge,perimeter, border_edges
+        return max_edge,perimeter, border_edges,total_area
 
-    def expansion(self, type,ratio_threshold,min_density,nb_min_region=4):
+    def expansion(self, type,ratio_threshold,min_density,nb_min_region=4,ratio_area=1.4):
         
         #nb_iterations = int(time.time())% 20 
         if type=="expansion_candidate":
+            
             if self.candidates_triangles is None or self.points is None or self.tri is None:
                 self.region_candidates = None
                 return None
-
             triangles = self.candidates_triangles
         elif type=="expansion_empty":
             if self.empty_triangles is None or self.points is None or self.tri is None:
@@ -436,11 +494,15 @@ class Computation():
         # Update the region attribute of the class
         #print(f"Région trouvée de type {type} avec {region} triangles sur un total de {len(self.tri.simplices)} triangles.")
         #calcul de la ratio nb de personnes du contour / perimetre
-        max_edge, perimeter, border_edges = self.compute_region_perimeter(region)
+        max_edge, perimeter, border_edges,total_area = self.compute_region_perimeter(region)
         density = perimeter/len(border_edges) if perimeter > 0 else 0
         #print(f"Densité de la région {type} : {density:.2f} (nombre de bords : {len(border_edges)}, périmètre : {perimeter:.2f})")
         if type == "expansion_candidate":
-            if len(region) < nb_min_region or density > min_density or max_edge > 3 or len(self.candidates)*4 >= len(border_edges): #Il faut au moins 4 fois plus de bords que de candidats pour l'expansion
+            #print(f"inegalité : {perimeter*perimeter:.2f} > 1.4*4*3.14*{total_area:.2f} = {1.4*4*3.14*total_area:.2f}")
+            if (len(region) < nb_min_region or density > min_density or max_edge > 3 
+            or len(self.candidates)*4 >= len(border_edges) or perimeter*perimeter>ratio_area*4*3.14*total_area): #Il faut au moins 4 fois plus de bords que de candidats pour l'expansion
+                if  perimeter*perimeter>ratio_area*4*3.14*total_area:
+                    print(f"inegalité : {perimeter*perimeter:.2f} > {ratio_area}*4*3.14*{total_area:.2f} = {ratio_area*4*3.14*total_area:.2f}")
                 self.region_candidates = None
                 self.candidates = None
                 self.candidates_triangles = None
@@ -448,7 +510,7 @@ class Computation():
             else:
                 self.region_candidates = region
         elif type == "expansion_empty":
-            if len(region) < nb_min_region or density > min_density or max_edge > 3:
+            if len(region) < nb_min_region or density > min_density or max_edge > 3 or perimeter*perimeter>ratio_area*4*3.14*total_area:
                 self.region_empty = None
                 self.empty_triangles = None
                 #print(f"Pas assez de triangles vides pour l'expansion vide (seulement {len(region)} trouvés).")
@@ -460,7 +522,7 @@ class Computation():
             
         return
     
-    def expansion_candidates(self, ratio_threshold=1.3,min_density=1.5):
-        self.expansion("expansion_candidate", ratio_threshold,min_density)
-    def expansion_empty(self, ratio_threshold=1.3, min_density=1.5):
-        self.expansion("expansion_empty", ratio_threshold, min_density)
+    def expansion_candidates(self, ratio_threshold=1.3,min_density=1.5, nb_min_region=4, ratio_area=1.4):
+        self.expansion("expansion_candidate", ratio_threshold,min_density, nb_min_region, ratio_area)
+    def expansion_empty(self, ratio_threshold=1.3, min_density=1.5, nb_min_region=4, ratio_area=1.4):
+        self.expansion("expansion_empty", ratio_threshold, min_density, nb_min_region, ratio_area)
