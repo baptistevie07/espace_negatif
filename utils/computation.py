@@ -500,7 +500,8 @@ class Computation():
         if type == "expansion_candidate":
             #print(f"inegalité : {perimeter*perimeter:.2f} > 1.4*4*3.14*{total_area:.2f} = {1.4*4*3.14*total_area:.2f}")
             if (len(region) < nb_min_region or density > min_density or max_edge > 3 
-            or len(self.candidates)*4 >= len(border_edges) or perimeter*perimeter>ratio_area*4*3.14*total_area): #Il faut au moins 4 fois plus de bords que de candidats pour l'expansion
+            or len(self.candidates)*4 >= len(border_edges) or perimeter*perimeter>ratio_area*4*3.14*total_area
+            or len(border_edges)<7): #Il faut au moins 4 fois plus de bords que de candidats pour l'expansion
                 if  perimeter*perimeter>ratio_area*4*3.14*total_area:
                     print(f"inegalité : {perimeter*perimeter:.2f} > {ratio_area}*4*3.14*{total_area:.2f} = {ratio_area*4*3.14*total_area:.2f}")
                 self.region_candidates = None
@@ -510,7 +511,7 @@ class Computation():
             else:
                 self.region_candidates = region
         elif type == "expansion_empty":
-            if len(region) < nb_min_region or density > min_density or max_edge > 3 or perimeter*perimeter>ratio_area*4*3.14*total_area:
+            if len(region) < nb_min_region or density > min_density or max_edge > 3 or perimeter*perimeter>ratio_area*4*3.14*total_area or len(border_edges)<7:
                 self.region_empty = None
                 self.empty_triangles = None
                 #print(f"Pas assez de triangles vides pour l'expansion vide (seulement {len(region)} trouvés).")
