@@ -2,10 +2,7 @@
 # ...existing code...
 
 from pythonosc.udp_client import SimpleUDPClient
-from pythonosc.dispatcher import Dispatcher
-from pythonosc.osc_server import BlockingOSCUDPServer
 import time
-import json
 import requests
 import os
 import sys
@@ -24,8 +21,22 @@ url = f"http://{ip}:{send_port}{osc_address}"  # URL pour accéder au fichier JS
 
 def boucle():
     state =1
+    print("Initialisation ...")
+    client.send_message("/worlds/world/children/scene/nodes/cloudRecorder/stop", 1)
+    client.send_message("/worlds/world/children/scene/nodes/cloudRecorder1/stop", 1)
+    client.send_message("/worlds/world/children/scene/nodes/cloudRecorder2/stop", 1)
+    client.send_message("/worlds/world/children/scene/nodes/cloudRecorder/loopRange", [0,1])
+    client.send_message("/worlds/world/children/scene/nodes/cloudRecorder1/loopRange", [0,1])
+    client.send_message("/worlds/world/children/scene/nodes/cloudRecorder2/loopRange", [0,1])
+    client.send_message("/worlds/world/children/scene/nodes/cloudRecorder/progression", 0)
+    client.send_message("/worlds/world/children/scene/nodes/cloudRecorder1/progression", 0)
+    client.send_message("/worlds/world/children/scene/nodes/cloudRecorder2/progression", 0)
+
+    time.sleep(1)
+    print("Début programme de rerecording")
+    print("")
     client.send_message("/worlds/world/children/scene/nodes/cloudRecorder1/play", 1)
-    
+    print("Envoi de la commande de lecture pour cloudRecorder1", time.strftime("%H:%M", time.localtime()))
     
     while not stop_event.is_set() and state<4:
         #lire le contenu du json en 127.0.0.1:20000 a l'adresse osc_address
@@ -43,11 +54,12 @@ def boucle():
                     print(f"Erreur lors de la récupération du JSON: {response.status_code}")
             except Exception as e:
                 print(f"Exception lors de la récupération du JSON: {e}")
-            if progression >0.02:
+            if progression >0.05:
                 state = 2
                 
                 client.send_message("/worlds/world/children/scene/nodes/cloudRecorder/play", 1)
                 client.send_message("/worlds/world/children/scene/nodes/cloudRecorder2/record", 1)
+                print("Envoi de la commande de lecture pour cloudRecorder et record pour cloudRecorder2", time.strftime("%H:%M", time.localtime()))
         if state ==2:
             progression = 0.0
             try:
@@ -62,10 +74,11 @@ def boucle():
                     print(f"Erreur lors de la récupération du JSON: {response.status_code}")
             except Exception as e:
                 print(f"Exception lors de la récupération du JSON: {e}")
-            if progression >0.37:
+            if progression >0.36:
                 state = 3
                 
                 client.send_message("/worlds/world/children/scene/nodes/cloudRecorder/stop", 1)
+                print("Envoi de la commande de stop pour cloudRecorder", time.strftime("%H:%M", time.localtime()))
         if state ==3:
             progression = 0.0
             try:
@@ -80,10 +93,11 @@ def boucle():
                     print(f"Erreur lors de la récupération du JSON: {response.status_code}")
             except Exception as e:
                 print(f"Exception lors de la récupération du JSON: {e}")
-            if progression >0.99:
+            if progression >0.99 or progression<0.1:
                 state = 4
                 
                 client.send_message("/worlds/world/children/scene/nodes/cloudRecorder2/stop", 1)
+                time.sleep(1)
                 client.send_message("/worlds/world/children/scene/nodes/cloudRecorder1/stop", 1)
 
 
