@@ -27,6 +27,8 @@ def boucle():
     target_value = 0.0
     last_working_value = 0.0
     step = 0.01  # Valeur d'incrémentation pour l'offset
+    client.send_message(f"{osc_address}/play", 1)
+    time.sleep(3)
     while not stop_event.is_set() and step > 0.00001:
         #lire le contenu du json en 127.0.0.1:20000 a l'adresse osc_address
         target_value += step  # Réinitialiser la valeur d'offset à chaque itération
