@@ -93,13 +93,13 @@ def rerecord(zone_a_effacer,nom_fichier,num_fichier):
                 if last_bug_time + 300 < time.time():
                     print("Erreur JSON, ", time.strftime("%H:%M", time.localtime()))
                     last_bug_time = time.time()
-            if progression >zone_a_effacer+0.01:
+            if progression >zone_a_effacer+0.1:
                 state = 3
                 
                 client.send_message("/worlds/world/children/scene/nodes/cloudRecorder/stop", 1)
                 print("Envoi de la commande de stop pour cloudRecorder", time.strftime("%H:%M", time.localtime()))
         if state ==3:
-            progression = 0.0
+            progression = 1.0
             try:
                 response = requests.get(url+"/cloudRecorder1")
                 if response.status_code == 200:
@@ -116,11 +116,11 @@ def rerecord(zone_a_effacer,nom_fichier,num_fichier):
                 if last_bug_time + 300 < time.time():
                     print("Erreur JSON, ", time.strftime("%H:%M", time.localtime()))
                     last_bug_time = time.time()
-            if progression >0.9999 or progression<0.1:
+            if progression<0.1:
                 state = 4
                 
                 client.send_message("/worlds/world/children/scene/nodes/cloudRecorder2/stop", 1)
-                time.sleep(1)
+                #time.sleep(1)
                 client.send_message("/worlds/world/children/scene/nodes/cloudRecorder1/stop", 1)
                 print("Envoi de la commande de stop pour cloudRecorder1 et cloudRecorder2", time.strftime("%H:%M", time.localtime()))
 
@@ -134,15 +134,18 @@ def rerecord(zone_a_effacer,nom_fichier,num_fichier):
     print("")
     
 def recherche_bug(last_bug,nom_fichier,num_fichier):
-    
+    osc_address = "/worlds/world/children/scene/nodes"  # Adresse OSC 
+    url = f"http://{ip}:{send_port}{osc_address}"
     client.send_message("/worlds/world/children/scene/nodes/cloudRecorder1/updateFileList", 1)
     time.sleep(1)
     reinitialisation()
     client.send_message("/worlds/world/children/scene/nodes/cloudRecorder1/recordingFiles", f"{nom_fichier}_{num_fichier}")
     client.send_message("/worlds/world/children/scene/nodes/cloudRecorder1/stop", 1)
     time.sleep(1)
-    target_value = last_bug+0.0011
-    last_working_value = last_bug+0.0011
+    #target_value = last_bug+0.0101
+    #last_working_value = last_bug+0.0101
+    target_value=0
+    last_working_value = 0
     step = 0.01 
     client.send_message("/worlds/world/children/scene/nodes/cloudRecorder1/play", 1)
     print("Recherche du point de bug...")
@@ -156,7 +159,26 @@ def recherche_bug(last_bug,nom_fichier,num_fichier):
         client.send_message("/worlds/world/children/scene/nodes/cloudRecorder1/progression", target_value) #/worlds/world/children/scene/nodes/cloudRecorder1/play
         time.sleep(1)
         #print(len(recepteur.get_positions())," personnes détectées")
-        if len(recepteur.get_positions()) <= 2 and target_value > 0.2:
+        progression = 1.0
+        try:
+            response = requests.get(url+"/cloudRecorder1")
+            if response.status_code == 200:
+                data = response.json()
+                progression = data.get("CONTENTS", {}).get("progression", {}).get("VALUE", [None])[0]
+                
+                #print(f"Progression: {progression}, nb personnes: {len(recepteur.get_positions())}")
+                
+            else:
+                if last_bug_time + 300 < time.time():
+                    print("Erreur JSON, ", time.strftime("%H:%M", time.localtime()))
+                    last_bug_time = time.time()
+        except Exception as e:
+            if last_bug_time + 300 < time.time():
+                print("Erreur JSON, ", time.strftime("%H:%M", time.localtime()))
+                last_bug_time = time.time()
+        
+        #if 0<len(recepteur.get_positions()) <= 2 and target_value > 0.2:
+        if progression < target_value:
             print(f"    progression non atteinte {target_value}")
             last_working_value = target_value-step
             target_value = last_working_value
@@ -166,7 +188,7 @@ def recherche_bug(last_bug,nom_fichier,num_fichier):
     print("")
     return last_working_value    
   
-def boucle(num_fichier=3,fichier="rerecording"):
+def boucle(num_fichier=2,fichier="rerecording"):
     if os.path.exists(f'./records_augmenta/{fichier}_{num_fichier+1}.cloud'):
         print(f"Le fichier {fichier}_{num_fichier+1}.cloud existe déjà")
         stop_event.set()
@@ -175,7 +197,7 @@ def boucle(num_fichier=3,fichier="rerecording"):
     client.send_message("/worlds/world/children/scene/nodes/cloudRecorder2/directory", os.path.abspath('./records_augmenta'))
     reinitialisation()
     bugs=[]
-    last_bug = 0.0
+    last_bug = 0.3821000000000002
     while not stop_event.is_set():
         zone_a_effacer = recherche_bug(last_bug=last_bug,nom_fichier=fichier,num_fichier=num_fichier)
         if zone_a_effacer is None:
