@@ -140,7 +140,9 @@ def recherche_bug(last_bug,nom_fichier,num_fichier):
     time.sleep(1)
     reinitialisation()
     client.send_message("/worlds/world/children/scene/nodes/cloudRecorder1/recordingFiles", f"{nom_fichier}_{num_fichier}")
+    client.send_message("/worlds/world/children/scene/nodes/cloudRecorder0/stop", 1)
     client.send_message("/worlds/world/children/scene/nodes/cloudRecorder1/stop", 1)
+    client.send_message("/worlds/world/children/scene/nodes/cloudRecorder2/stop", 1)
     time.sleep(1)
     #target_value = last_bug+0.0101
     #last_working_value = last_bug+0.0101
@@ -157,7 +159,7 @@ def recherche_bug(last_bug,nom_fichier,num_fichier):
         if target_value >= 1.0:
             return None
         client.send_message("/worlds/world/children/scene/nodes/cloudRecorder1/progression", target_value) #/worlds/world/children/scene/nodes/cloudRecorder1/play
-        time.sleep(1)
+        time.sleep(3)
         #print(len(recepteur.get_positions())," personnes détectées")
         progression = 1.0
         try:
@@ -178,7 +180,7 @@ def recherche_bug(last_bug,nom_fichier,num_fichier):
                 last_bug_time = time.time()
         
         #if 0<len(recepteur.get_positions()) <= 2 and target_value > 0.2:
-        if progression < target_value:
+        if progression < target_value and target_value > 0.2:
             print(f"    progression non atteinte {target_value}")
             last_working_value = target_value-step
             target_value = last_working_value
@@ -188,7 +190,7 @@ def recherche_bug(last_bug,nom_fichier,num_fichier):
     print("")
     return last_working_value    
   
-def boucle(num_fichier=2,fichier="rerecording"):
+def boucle(num_fichier=1,fichier="rerecording"):
     if os.path.exists(f'./records_augmenta/{fichier}_{num_fichier+1}.cloud'):
         print(f"Le fichier {fichier}_{num_fichier+1}.cloud existe déjà")
         stop_event.set()
@@ -197,7 +199,7 @@ def boucle(num_fichier=2,fichier="rerecording"):
     client.send_message("/worlds/world/children/scene/nodes/cloudRecorder2/directory", os.path.abspath('./records_augmenta'))
     reinitialisation()
     bugs=[]
-    last_bug = 0.3821000000000002
+    last_bug = 0
     while not stop_event.is_set():
         zone_a_effacer = recherche_bug(last_bug=last_bug,nom_fichier=fichier,num_fichier=num_fichier)
         if zone_a_effacer is None:
