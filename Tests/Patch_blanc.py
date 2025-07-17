@@ -17,6 +17,8 @@ recept_port = 3335
   # URL pour accéder au fichier JSON /worlds/world/children/scene/nodes/cloudRecorder1/progression
 
 def reinitialisation():
+    client.send_message("/worlds/world/children/scene/nodes/cloudRecorder1/updateFileList", 1)
+    client.send_message("/worlds/world/children/scene/nodes/cloudRecorder2/updateFileList", 1)
     client.send_message("/worlds/world/children/scene/nodes/cloudRecorder/stop", 1)
     client.send_message("/worlds/world/children/scene/nodes/cloudRecorder1/stop", 1)
     client.send_message("/worlds/world/children/scene/nodes/cloudRecorder2/stop", 1)
