@@ -190,7 +190,7 @@ def recherche_bug(last_bug,nom_fichier,num_fichier):
     print("")
     return last_working_value    
   
-def boucle(num_fichier=1,fichier="rerecording"):
+def boucle(num_fichier=2,fichier="rerecording"):
     if os.path.exists(f'./records_augmenta/{fichier}_{num_fichier+1}.cloud'):
         print(f"Le fichier {fichier}_{num_fichier+1}.cloud existe déjà")
         stop_event.set()
