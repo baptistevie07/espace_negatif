@@ -192,7 +192,7 @@ class Affichage:
             if computation.region_empty is None:
                 return
             #On cherche les ids des points des triangles dans self.region
-            triangles = [computation.tri.simplices[simplex] for simplex in computation.region_empty]
+            triangles = [computation.tri.simplices[simplex] for simplex in computation.region_empty if simplex < len(computation.tri.simplices)]
             color= (100, 100, 255)
         elif type == "expansion_candidates":
             if computation.region_candidates is None:
@@ -204,9 +204,9 @@ class Affichage:
             print(f"Drawing final zone with type: {type}, taille region candidates : {len(computation.region_candidates) if computation.region_candidates else 'None'}, taille region empty : {len(computation.region_empty) if computation.region_empty else 'None'}")
             triangles =[]
             if computation.region_empty:
-                triangles+=[computation.tri.simplices[simplex] for simplex in computation.region_empty]
+                triangles+=[computation.tri.simplices[simplex] for simplex in computation.region_empty if simplex < len(computation.tri.simplices)]
             if computation.region_candidates:
-                triangles+=[computation.tri.simplices[simplex] for simplex in computation.region_candidates]
+                triangles+=[computation.tri.simplices[simplex] for simplex in computation.region_candidates if simplex < len(computation.tri.simplices)]
             if not triangles:
                 return
             color = (128, 128, 128)
