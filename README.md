@@ -56,9 +56,12 @@ Afficher schéma des flux
 
 ### Algorithme de détection
 
-La détection des espaces négatifs est basée sur une triangulation de Delauney : on construit un système de triangles reliant toutes les coordonnées des clusters et on en tire un certain nombre de propriétés. Tout est calculé dans [```computation.py```](./utils/computation.py). Après triangulation, on opère en parallèle deux types de recherche, puis on fera une expansion de la zone candidate :
+La détection des espaces négatifs est basée sur une triangulation de Delauney : on construit un système de triangles reliant toutes les coordonnées des clusters et on en tire un certain nombre de propriétés. Tout est calculé dans [```computation.py```](./utils/computation.py). 
 
 ![Triangulation](media/Triangulation.PNG)
+*Triangulation de Delaunay appliquée aux clusters détectés dans la foule.*
+
+Après triangulation, on opère en parallèle deux types de recherche, puis on fera une expansion de la zone candidate :
 
 - Recherche d'espaces négatifs sans personne à l'intérieur. On cherche des triangles candidats (fonction ```empty_zones```).
     - Recherche des zones candidates :

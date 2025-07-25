@@ -330,18 +330,19 @@ class Computation():
                 if idx in id_to_track:
                     print(f"Point {idx} conservé car voisin candidat retenu")
         id_to_track = self.afficher(id_to_track, final2_candidates, f"voisins éloignés (distance >= 2.0)")
-
-        
-        candidates_triangles = {}
-        idx=0
-        for simplex in self.tri.simplices:
-            if any(vertex in final2_candidates for vertex in simplex):
-                candidates_triangles[idx] = simplex.tolist()
-            idx+=1
+        self.candidates_triangles = []
+        for candidate in final2_candidates:
+            candidates_triangles = {}
+            idx=0
+            for simplex in self.tri.simplices:
+                if any(vertex==candidate for vertex in simplex):
+                    candidates_triangles[idx] = simplex.tolist()
+                idx+=1
+            self.candidates_triangles.append(candidates_triangles)
         
         self.candidates = final2_candidates
         
-        self.candidates_triangles = candidates_triangles
+        
         
         return None
 
@@ -434,24 +435,7 @@ class Computation():
 
         return max_edge,perimeter, border_edges,total_area
 
-    def expansion(self, type,ratio_threshold,min_density,nb_min_region=4,ratio_area=1.4):
-        
-        #nb_iterations = int(time.time())% 20 
-        if type=="expansion_candidate":
-            
-            if self.candidates_triangles is None or self.points is None or self.tri is None:
-                self.region_candidates = None
-                return None
-            triangles = self.candidates_triangles
-        elif type=="expansion_empty":
-            if self.empty_triangles is None or self.points is None or self.tri is None:
-                self.region_empty = None
-                return None
-            triangles = self.empty_triangles
-        else:
-            print(f"Type '{type}' non reconnu pour expansion.")
-            return None
-        #print(f"debut expansion de type {type} avec {len(self.tri.simplices)} triangles")
+    def expansion(self,triangles, type,ratio_threshold,min_density,nb_min_region=4,ratio_area=1.4):
         points = self.points
         tri = self.tri
         #print(f"triangles keys : {triangles.keys()}")
@@ -498,18 +482,20 @@ class Computation():
         density = perimeter/len(border_edges) if perimeter > 0 else 0
         #print(f"Densité de la région {type} : {density:.2f} (nombre de bords : {len(border_edges)}, périmètre : {perimeter:.2f})")
         if type == "expansion_candidate":
+            print(f"candidates : {self.candidates},border_edges : {len(border_edges)}, perimeter : {perimeter:.2f}, total_area : {total_area:.2f}, ratio_area : {ratio_area}")
             #print(f"inegalité : {perimeter*perimeter:.2f} > 1.4*4*3.14*{total_area:.2f} = {1.4*4*3.14*total_area:.2f}")
             if (len(region) < nb_min_region or density > min_density or max_edge > 3 
             or len(self.candidates)*4 >= len(border_edges) or perimeter*perimeter>ratio_area*4*3.14*total_area
             or len(border_edges)<7): #Il faut au moins 4 fois plus de bords que de candidats pour l'expansion
                 if  perimeter*perimeter>ratio_area*4*3.14*total_area:
                     print(f"inegalité : {perimeter*perimeter:.2f} > {ratio_area}*4*3.14*{total_area:.2f} = {ratio_area*4*3.14*total_area:.2f}")
-                self.region_candidates = None
-                self.candidates = None
-                self.candidates_triangles = None
+                #self.region_candidates = None
+                #self.candidates = None
+                #self.candidates_triangles = None
                 #print(f"Pas assez de triangles candidats pour l'expansion (seulement {len(region)} trouvés).")
+                return
             else:
-                self.region_candidates = region
+                self.region_candidates.append(region)
         elif type == "expansion_empty":
             if len(region) < nb_min_region or density > min_density or max_edge > 3 or perimeter*perimeter>ratio_area*4*3.14*total_area or len(border_edges)<7:
                 self.region_empty = None
@@ -524,6 +510,17 @@ class Computation():
         return
     
     def expansion_candidates(self, ratio_threshold=1.3,min_density=1.5, nb_min_region=4, ratio_area=1.4):
-        self.expansion("expansion_candidate", ratio_threshold,min_density, nb_min_region, ratio_area)
+        if self.candidates_triangles is None or self.points is None or self.tri is None or self.candidates is None:
+                self.region_candidates = None
+                return None
+        for triangles in self.candidates_triangles:
+            self.expansion(triangles, "expansion_candidate", ratio_threshold,min_density, nb_min_region, ratio_area)
+        if self.region_candidates is None:
+            self.candidates = None
+            self.candidates_triangles = None
+        
     def expansion_empty(self, ratio_threshold=1.3, min_density=1.5, nb_min_region=4, ratio_area=1.4):
-        self.expansion("expansion_empty", ratio_threshold, min_density, nb_min_region, ratio_area)
+        if self.empty_triangles is None or self.points is None or self.tri is None:
+                self.region_empty = None
+                return None
+        self.expansion(self.empty_triangles, "expansion_empty", ratio_threshold, min_density, nb_min_region, ratio_area)
