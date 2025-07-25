@@ -313,7 +313,7 @@ class Computation():
         delaunay_neighbors = self.neighbors
         final2_candidates = []
         for idx in final_candidates:
-            if self.has_distant_delaunay_neighbors(idx, points, delaunay_neighbors, min_dist=1.5, min_count=2):
+            if self.has_distant_delaunay_neighbors(idx, points, delaunay_neighbors, min_dist=3, min_count=2):
                 final2_candidates.append(idx)
         #On regarde les candidats non retenus, et on les garde si ils ont des voisins candidats qui ont été retenus
         for idx in final_candidates:
@@ -322,7 +322,7 @@ class Computation():
             # Vérifier si ce point a des voisins candidats qui ont été retenus
             has_candidate_neighbor = False
             for neighbor_idx in delaunay_neighbors[idx]:
-                if neighbor_idx in final2_candidates:
+                if neighbor_idx in final2_candidates and np.linalg.norm(points[idx] - points[neighbor_idx]) < 1.5:
                     has_candidate_neighbor = True
                     break
             if has_candidate_neighbor:
@@ -482,10 +482,11 @@ class Computation():
         density = perimeter/len(border_edges) if perimeter > 0 else 0
         #print(f"Densité de la région {type} : {density:.2f} (nombre de bords : {len(border_edges)}, périmètre : {perimeter:.2f})")
         if type == "expansion_candidate":
-            print(f"candidates : {self.candidates},border_edges : {len(border_edges)}, perimeter : {perimeter:.2f}, total_area : {total_area:.2f}, ratio_area : {ratio_area}")
+            #print(f"candidates : {self.candidates},border_edges : {len(border_edges)}, perimeter : {perimeter:.2f}, total_area : {total_area:.2f}, ratio_area : {ratio_area}")
             #print(f"inegalité : {perimeter*perimeter:.2f} > 1.4*4*3.14*{total_area:.2f} = {1.4*4*3.14*total_area:.2f}")
             if (len(region) < nb_min_region or density > min_density or max_edge > 3 
-            or len(self.candidates)*4 >= len(border_edges) or perimeter*perimeter>ratio_area*4*3.14*total_area
+            #or len(self.candidates)*4 >= len(border_edges) 
+            or perimeter*perimeter>ratio_area*4*3.14*total_area
             or len(border_edges)<7): #Il faut au moins 4 fois plus de bords que de candidats pour l'expansion
                 if  perimeter*perimeter>ratio_area*4*3.14*total_area:
                     print(f"inegalité : {perimeter*perimeter:.2f} > {ratio_area}*4*3.14*{total_area:.2f} = {ratio_area*4*3.14*total_area:.2f}")
@@ -495,7 +496,9 @@ class Computation():
                 #print(f"Pas assez de triangles candidats pour l'expansion (seulement {len(region)} trouvés).")
                 return
             else:
-                self.region_candidates.append(region)
+                self.region_candidates+=region
+                # Fusionner les doublons dans self.region_candidates
+                self.region_candidates = list(set(self.region_candidates))
         elif type == "expansion_empty":
             if len(region) < nb_min_region or density > min_density or max_edge > 3 or perimeter*perimeter>ratio_area*4*3.14*total_area or len(border_edges)<7:
                 self.region_empty = None
@@ -513,6 +516,8 @@ class Computation():
         if self.candidates_triangles is None or self.points is None or self.tri is None or self.candidates is None:
                 self.region_candidates = None
                 return None
+        self.region_candidates = []
+        print(f"Début de l'expansion candidates avec {self.candidates} candidats.")
         for triangles in self.candidates_triangles:
             self.expansion(triangles, "expansion_candidate", ratio_threshold,min_density, nb_min_region, ratio_area)
         if self.region_candidates is None:

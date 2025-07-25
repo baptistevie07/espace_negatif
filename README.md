@@ -65,21 +65,25 @@ Après triangulation, on opère en parallèle deux types de recherche, puis on f
 
 - Recherche d'espaces négatifs sans personne à l'intérieur. On cherche des triangles candidats (fonction ```empty_zones```).
     - Recherche des zones candidates :
+
         | Critère                      | Explication                                      |
         |------------------------------|--------------------------------------------------|
         | Aire minimale              | Si > ```area_threshold```       |
     - Discrimination des zones candidates si :
+    
         | Critère                      | Explication                                       |
         |------------------------------|--------------------------------------------------|
         | Moins de deux voisins proches              | Si les clusters aux sommets n'ont pas 2 voisins proches, cela veut dire qu'ils ne font pas partie d'un cercle de gens autour d'un espace négatifs. Il leur faut deux voisins à une distance inférieur de ```radius```.       |
 
 - Recherche d'espaces négatifs avec des personnes à l'interieur. On cherche ici des sommets candidats, qui seraient les gens à l'intérieur du cercle (fonction ```personnes_centrales```).
     - Recherche des sommets candidats (il faut un critère rempli) :
+
         | Critère                      | Explication                                       |
         |------------------------------|--------------------------------------------------|
         | Nombre minimal de voisins              | Si un sommet a de nombreux voisins, cela peut pouvoir dire qu'il est au centre d'un cercle : il "voit" beaucoup de personnes. Il doit au minimum avoir ```n_triangles``` voisins.|
         | Nombre minimal de voisins, condition allégée | On considère que deux sommets très proches peuvent partager leur nombre de voisins, on compte donc leur nombre de voisins globaux et on vérifie la première condition. On regarde également les sommets qui sont dans le cas : ```n_triangles``` - 2 <= count < ```n_triangles```. Si ils sont reliés directement à un autre candidat qui a au moins ```n_triangles``` - 2 voisins, cela peut vouloir dire qu'il y a plusieurs personnes à l'intérieur de l'espace négatif.
     - Discrimination des sommets candidats si (une seule condition suffit à discriminer):
+
         | Critère                      | Explication                                       |
         |------------------------------|--------------------------------------------------|
         | Candidat trop près d'un sommet qui n'est pas candidat              | Si un candidat est proche d'un autre qui n'est pas candidat, alors il fait partie du contour de l'espace négatif et n'est pas à l'intérieur. Si il est plus près que ```distance_min```. |
@@ -95,6 +99,7 @@ On a maintenant des zones candidates issues de deux manières différentes. On v
 Ajouter image
 
 - Discrimination des espaces trouvés (une seule condition suffit à discriminer) :
+
     | Critère | Explication |
     |-|-|
     | Pas assez de triangles dans la zone | Si < ```nb_min_region```|
