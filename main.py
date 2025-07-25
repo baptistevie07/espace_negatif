@@ -5,8 +5,6 @@ import time
 import threading
 import pygame as pg
 
-ip = "192.168.0.125" 
-port_client = 12001
 recept_port = 3335
 
 
