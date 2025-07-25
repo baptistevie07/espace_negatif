@@ -38,7 +38,7 @@ def afficher():
         ages = osc.get_ages()
         computation.computation(positions,ages,width, height)
         computation.personnes_centrales(n_triangles=8,distance_min=1.2,angle_max=75,id_to_track=[])
-        computation.empty_zones(area_threshold=3, radius=1.5)
+        computation.empty_zones(area_threshold=3, radius=3)
         computation.expansion_candidates(ratio_threshold=1.4, min_density=1.2,ratio_area=1.7, nb_min_region=6)
         computation.expansion_empty(ratio_threshold=1.4,min_density=1.5,ratio_area=1.7, nb_min_region=6)
         visualiser.clear()

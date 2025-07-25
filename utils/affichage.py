@@ -173,7 +173,9 @@ class Affichage:
         if type == "central":
             if computation.empty_triangles is None:
                 return
-            triangles = computation.empty_triangles.values()
+            triangles = []
+            for ensemble in computation.empty_triangles:
+                triangles.extend(list(ensemble.values()))
             color = (0, 0, 255) 
         elif type == "candidates":
             if computation.candidates_triangles is None:

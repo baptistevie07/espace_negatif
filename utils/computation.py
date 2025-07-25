@@ -396,8 +396,8 @@ class Computation():
             return None
         filtered_empty_triangles = {}
         print(f"triangles vides trouvés : {empty_triangles}")
-        self.empty_triangles = empty_triangles
-        return
+
+        
         for id,triangle in empty_triangles.items():
             potentiel = True
             for i in triangle:
@@ -410,8 +410,23 @@ class Computation():
                     potentiel = False
             if potentiel:
                 filtered_empty_triangles[id] = triangle
-                  
-        self.empty_triangles = filtered_empty_triangles
+        #On fait comme pour les candidats, on regroupe les triangles vides par groupe de triangles proches, à la fin on obtient une liste de dictionnaires de triangles adjacents
+        visited_triangles = set()
+        grouped_empty_triangles = []
+        for triangle_id, triangle in filtered_empty_triangles.items():
+            if triangle_id in visited_triangles:
+                continue
+            group = {triangle_id: triangle}
+            visited_triangles.add(triangle_id)
+            for other_triangle_id, other_triangle in filtered_empty_triangles.items():
+                if other_triangle_id == triangle_id or other_triangle_id in visited_triangles:
+                    continue
+                # Vérifier si les triangles partagent un sommet
+                if set(triangle) & set(other_triangle):
+                    group[other_triangle_id] = other_triangle
+                    visited_triangles.add(other_triangle_id)
+            grouped_empty_triangles.append(group)
+        self.empty_triangles = grouped_empty_triangles
         #print(f"Nombre de triangles vides filtrés : {len(self.empty_triangles)}")
         if len(self.empty_triangles) == 0:
             self.empty_triangles = None
@@ -512,7 +527,7 @@ class Computation():
             #or len(self.candidates)*4 >= len(border_edges) 
             or perimeter*perimeter>ratio_area*4*3.14*total_area
             or len(border_edges)<7): #Il faut au moins 4 fois plus de bords que de candidats pour l'expansion
-                if False:
+                if True:
                     if  perimeter*perimeter>ratio_area*4*3.14*total_area:
                         print(f"inegalité : {perimeter*perimeter:.2f} > {ratio_area}*4*3.14*{total_area:.2f} = {ratio_area*4*3.14*total_area:.2f}")
                     if len(border_edges)<7:
@@ -538,7 +553,7 @@ class Computation():
                 #self.region_empty = None
                 #self.empty_triangles = None
                 #print(f"Pas assez de triangles vides pour l'expansion vide (seulement {len(region)} trouvés).")
-                if True:
+                if False:
                     if perimeter*perimeter>ratio_area*4*3.14*total_area:
                         print(f"inegalité : {perimeter*perimeter:.2f} > {ratio_area}*4*3.14*{total_area:.2f} = {ratio_area*4*3.14*total_area:.2f}")
                     if len(border_edges)<7:
@@ -550,7 +565,9 @@ class Computation():
                     if len(region) < nb_min_region:
                         print(f"Pas assez de triangles vides pour l'expansion vide (seulement {len(region)} trouvés).")
             else:
-                self.region_empty = region
+                self.region_empty += region
+                # Fusionner les doublons dans self.region_empty
+                self.region_empty = list(set(self.region_empty))
         #if len(region) < nb_min_region:print(f"Pas assez de triangles pour l'expansion {type} (seulement {len(region)} trouvés).")
         #if density>min_density:print(f"Densité trop élevée pour l'expansion {type} : {density:.2f}, min : {min_density} (périmètre : {perimeter:.2f}, nombre de bords : {len(border_edges)})")
         #if max_edge > 2:print(f"Expansion {type} rejetée car le côté maximal {max_edge:.2f} est supérieur à 2.")
@@ -565,12 +582,14 @@ class Computation():
         print(f"Début de l'expansion candidates avec {self.candidates} candidats.")
         for triangles in self.candidates_triangles:
             self.expansion(triangles, "expansion_candidate", ratio_threshold,min_density, nb_min_region, ratio_area)
-        if self.region_candidates is None:
-            self.candidates = None
-            self.candidates_triangles = None
+        
         
     def expansion_empty(self, ratio_threshold=1.3, min_density=1.5, nb_min_region=4, ratio_area=1.4):
         if self.empty_triangles is None or self.points is None or self.tri is None:
                 self.region_empty = None
                 return None
-        self.expansion(self.empty_triangles, "expansion_empty", ratio_threshold, min_density, nb_min_region, ratio_area)
+        self.region_empty = []
+        print(f"Début de l'expansion vide avec {len(self.empty_triangles)} triangles vides.")
+        for triangles in self.empty_triangles:
+            self.expansion(triangles, "expansion_empty", ratio_threshold, min_density, nb_min_region, ratio_area)
+     
