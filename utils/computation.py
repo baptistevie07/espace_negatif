@@ -83,7 +83,7 @@ class Computation():
             print(f"\rPas assez de points uniques pour la triangulation (avant filtrage).", end="")
             return None
         mask = ((points[:, 0] >= 0) & (points[:, 0] <= width) &
-                (points[:, 1] >= 0) & (points[:, 1] <= height) & (ages > 5))
+                (points[:, 1] >= 0) & (points[:, 1] <= height) & (ages > 20))
         points = points[mask]
         points = np.unique(points, axis=0)
         if len(points) < 3:
@@ -395,7 +395,7 @@ class Computation():
             self.empty_triangles = None
             return None
         filtered_empty_triangles = {}
-        print(f"triangles vides trouvés : {empty_triangles}")
+        #print(f"triangles vides trouvés : {empty_triangles}")
 
         
         for id,triangle in empty_triangles.items():
@@ -405,7 +405,7 @@ class Computation():
                 neighbor_ids = self.tree.query_ball_point(points[i], r=radius)
                 
                 valid_neighbors = [nid for nid in neighbor_ids if nid != i]
-                print(f"Point {i} a {len(valid_neighbors)} voisins proches dans le triangle {id}, radius {radius}")
+                #print(f"Point {i} a {len(valid_neighbors)} voisins proches dans le triangle {id}, radius {radius}")
                 if len(valid_neighbors) < 2: #Au moins deux voisins proches
                     potentiel = False
             if potentiel:
@@ -431,7 +431,7 @@ class Computation():
         if len(self.empty_triangles) == 0:
             self.empty_triangles = None
             return None
-        print(f"Nombre de triangles vides filtrés : {len(self.empty_triangles)}")
+        #print(f"Nombre de triangles vides filtrés : {len(self.empty_triangles)}")
         return None
 
     def edge_length(self, p1, p2):
@@ -527,7 +527,7 @@ class Computation():
             #or len(self.candidates)*4 >= len(border_edges) 
             or perimeter*perimeter>ratio_area*4*3.14*total_area
             or len(border_edges)<7): #Il faut au moins 4 fois plus de bords que de candidats pour l'expansion
-                if True:
+                if False:
                     if  perimeter*perimeter>ratio_area*4*3.14*total_area:
                         print(f"inegalité : {perimeter*perimeter:.2f} > {ratio_area}*4*3.14*{total_area:.2f} = {ratio_area*4*3.14*total_area:.2f}")
                     if len(border_edges)<7:
@@ -579,7 +579,7 @@ class Computation():
                 self.region_candidates = None
                 return None
         self.region_candidates = []
-        print(f"Début de l'expansion candidates avec {self.candidates} candidats.")
+        #print(f"Début de l'expansion candidates avec {self.candidates} candidats.")
         for triangles in self.candidates_triangles:
             self.expansion(triangles, "expansion_candidate", ratio_threshold,min_density, nb_min_region, ratio_area)
         
@@ -589,7 +589,7 @@ class Computation():
                 self.region_empty = None
                 return None
         self.region_empty = []
-        print(f"Début de l'expansion vide avec {len(self.empty_triangles)} triangles vides.")
+        #print(f"Début de l'expansion vide avec {len(self.empty_triangles)} triangles vides.")
         for triangles in self.empty_triangles:
             self.expansion(triangles, "expansion_empty", ratio_threshold, min_density, nb_min_region, ratio_area)
      

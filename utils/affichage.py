@@ -203,7 +203,7 @@ class Affichage:
             triangles = [computation.tri.simplices[simplex] for simplex in computation.region_candidates]
             color= (180, 100, 100)
         elif type == "final" or type == "ndi":
-            print(f"Drawing final zone with type: {type}, taille region candidates : {len(computation.region_candidates) if computation.region_candidates else 'None'}, taille region empty : {len(computation.region_empty) if computation.region_empty else 'None'}")
+            #print(f"Drawing final zone with type: {type}, taille region candidates : {len(computation.region_candidates) if computation.region_candidates else 'None'}, taille region empty : {len(computation.region_empty) if computation.region_empty else 'None'}")
             triangles =[]
             if computation.region_empty:
                 triangles+=[computation.tri.simplices[simplex] for simplex in computation.region_empty if simplex < len(computation.tri.simplices)]
