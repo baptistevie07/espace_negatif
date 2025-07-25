@@ -387,14 +387,17 @@ class Computation():
             if area > area_threshold:
                 empty_triangles[idx] = simplex.tolist()
             idx += 1
-        #print(f"triangles vides trouvés : {empty_triangles}")
+        
+        
         # Parmis ces candidats, on va vérifier que tous les sommets ont au moins 2 voisins proches
         #print(f"Nombre de triangles vides trouvés : {len(empty_triangles)}")
         if not empty_triangles or self.tree== None:
             self.empty_triangles = None
             return None
         filtered_empty_triangles = {}
-        
+        print(f"triangles vides trouvés : {empty_triangles}")
+        self.empty_triangles = empty_triangles
+        return
         for id,triangle in empty_triangles.items():
             potentiel = True
             for i in triangle:
@@ -402,14 +405,12 @@ class Computation():
                 neighbor_ids = self.tree.query_ball_point(points[i], r=radius)
                 
                 valid_neighbors = [nid for nid in neighbor_ids if nid != i]
-                
+                print(f"Point {i} a {len(valid_neighbors)} voisins proches dans le triangle {id}, radius {radius}")
                 if len(valid_neighbors) < 2: #Au moins deux voisins proches
                     potentiel = False
             if potentiel:
                 filtered_empty_triangles[id] = triangle
-            
-        if not filtered_empty_triangles:
-            self.empty_triangles = None           
+                  
         self.empty_triangles = filtered_empty_triangles
         #print(f"Nombre de triangles vides filtrés : {len(self.empty_triangles)}")
         if len(self.empty_triangles) == 0:
