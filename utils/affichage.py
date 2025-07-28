@@ -1,8 +1,10 @@
+from matplotlib import text
 import pygame as pg
 import numpy as np
 import math as ma
 from utils.pg_utils.buttons import Parametres
 from utils.envoi_ndi import NDI_Sender
+import time
 
 class Affichage:
     def __init__(self, width, height,sender=True,nb_max_pixels=1000):
@@ -173,19 +175,28 @@ class Affichage:
         if type == "central":
             if computation.empty_triangles is None:
                 return
-            triangles = computation.empty_triangles.values()
+            triangles = []
+            for ensemble in computation.empty_triangles:
+                triangles.extend(list(ensemble.values()))
             color = (0, 0, 255) 
         elif type == "candidates":
             if computation.candidates_triangles is None:
                 return
             #On cherche les ids des points des triangles dans self.region
-            triangles = computation.candidates_triangles.values()
+            # Flatten all dict_values to get a list of triangle triplets
+            triangles = []
+            for ensemble in computation.candidates_triangles:
+                triangles.extend(list(ensemble.values()))
+            #print(f"candidats triangles : {triangles}")
+            #triangles = computation.candidates_triangles.values()
+            #triangles = list(set(triangles))  # Remove duplicates
             color= (255, 0, 0)
+            
         elif type == "expansion_empty":
             if computation.region_empty is None:
                 return
             #On cherche les ids des points des triangles dans self.region
-            triangles = [computation.tri.simplices[simplex] for simplex in computation.region_empty]
+            triangles = [computation.tri.simplices[simplex] for simplex in computation.region_empty if simplex < len(computation.tri.simplices)]
             color= (100, 100, 255)
         elif type == "expansion_candidates":
             if computation.region_candidates is None:
@@ -194,11 +205,12 @@ class Affichage:
             triangles = [computation.tri.simplices[simplex] for simplex in computation.region_candidates]
             color= (180, 100, 100)
         elif type == "final" or type == "ndi":
+            #print(f"Drawing final zone with type: {type}, taille region candidates : {len(computation.region_candidates) if computation.region_candidates else 'None'}, taille region empty : {len(computation.region_empty) if computation.region_empty else 'None'}")
             triangles =[]
             if computation.region_empty:
-                triangles+=[computation.tri.simplices[simplex] for simplex in computation.region_empty]
+                triangles+=[computation.tri.simplices[simplex] for simplex in computation.region_empty if simplex < len(computation.tri.simplices)]
             if computation.region_candidates:
-                triangles+=[computation.tri.simplices[simplex] for simplex in computation.region_candidates]
+                triangles+=[computation.tri.simplices[simplex] for simplex in computation.region_candidates if simplex < len(computation.tri.simplices)]
             if not triangles:
                 return
             color = (128, 128, 128)
@@ -260,3 +272,22 @@ class Affichage:
             if len(triangle) == 3:
                 triangles_dict[idx] = [points[triangle[0]], points[triangle[1]], points[triangle[2]]]
         return triangles_dict
+    
+    def draw_area_life(self, life):
+        life_time = time.time() - life.born
+        if not life.area_on:
+            life_time = 0
+        life_threshold = life.life_threshold
+        pg.draw.rect(self.screen, (128, 128, 128), (self.width +15, 25, 220, 20))
+        if life_time>life_threshold:
+            color = (0, 255, 0)
+            pg.draw.rect(self.screen, color, (self.width +15, 25, 220, 20))
+            font=pg.font.Font(None, 24)
+            txt_surface = font.render(str(int(life_time))+" secondes", True, (255,255,255))
+            txt_rect = txt_surface.get_rect(center=(self.width + 15 + 110, 25 + 10))
+            self.screen.blit(txt_surface, txt_rect)
+        else:
+            color = (255, 0, 0)
+            pg.draw.rect(self.screen, color, (self.width +15, 25, int(220*life_time/life_threshold), 20))
+        pg.draw.rect(self.screen, (255, 255, 255), (self.width + 15, 45, 220*sum(life.count) / len(life.count), 10))
+        pg.draw.line(self.screen, (255, 0,0), (self.width + 15 + int(220*life.min_ratio), 45), (self.width + 15 + int(220*life.min_ratio), 55), 1)

@@ -19,6 +19,7 @@ class Computation():
         self.region_candidates = None
         self.tree = None  # cKDTree pour les recherches de voisinage
         self.neighbors = None  # Dictionnaire pour les voisins de Delaunay
+        self.area_life = 0
 
     def afficher(self, id_to_track, candidates, message):
         #si candidates est un dictionnaire, on prend les clés et on en fait des int
@@ -30,7 +31,7 @@ class Computation():
             print("Perte de candidats : ", message, " : ", lost_ids)
             return [id for id in id_to_track if id in candidates]
         if not candidates:
-            print(f"Aucun candidat trouvé pour {message}.")
+            #print(f"Aucun candidat trouvé pour {message}.")
             return id_to_track
         return []
     def build_delaunay_neighbors(self,tri):
@@ -231,7 +232,7 @@ class Computation():
         for a, b in combinations(filtered_candidates, 2):
             #print(f"Comparaison des points {a} et {b} avec distance {np.linalg.norm(self.points[a] - self.points[b]):.2f}")
             if np.linalg.norm(self.points[a] - self.points[b]) < 0.5:
-                print(f"Points {a} et {b} très proches, vérification des triangles")
+                #print(f"Points {a} et {b} très proches, vérification des triangles")
                 if a in final_candidates and b not in final_candidates:
                     final_candidates.append(b)
                     if b in id_to_track:
@@ -296,6 +297,7 @@ class Computation():
                 filtered_candidates.append(idx)
         filtered_candidates = list(set(filtered_candidates))
         id_to_track = self.afficher(id_to_track, filtered_candidates, f"proche d'un autre point (distance < {distance_min})")
+        #print(f"Nombre de candidats après filtrage : {len(filtered_candidates)}")
         if len(filtered_candidates) == 0:
             self.candidates = None
             self.candidates_triangles = None
@@ -313,16 +315,17 @@ class Computation():
         delaunay_neighbors = self.neighbors
         final2_candidates = []
         for idx in final_candidates:
-            if self.has_distant_delaunay_neighbors(idx, points, delaunay_neighbors, min_dist=1.5, min_count=2):
+            if self.has_distant_delaunay_neighbors(idx, points, delaunay_neighbors, min_dist=3, min_count=2):
                 final2_candidates.append(idx)
+        #print(f"Nombre de candidats finaux après filtrage angulaire et voisins éloignés : {len(final2_candidates)}, avant : {len(filtered_candidates)}")
         #On regarde les candidats non retenus, et on les garde si ils ont des voisins candidats qui ont été retenus
-        for idx in final_candidates:
+        for idx in filtered_candidates:
             if idx in final2_candidates:
                 continue
             # Vérifier si ce point a des voisins candidats qui ont été retenus
             has_candidate_neighbor = False
             for neighbor_idx in delaunay_neighbors[idx]:
-                if neighbor_idx in final2_candidates:
+                if neighbor_idx in final2_candidates and np.linalg.norm(points[idx] - points[neighbor_idx]) < 2:
                     has_candidate_neighbor = True
                     break
             if has_candidate_neighbor:
@@ -331,21 +334,44 @@ class Computation():
                     print(f"Point {idx} conservé car voisin candidat retenu")
         id_to_track = self.afficher(id_to_track, final2_candidates, f"voisins éloignés (distance >= 2.0)")
 
+        # prend final2_candidates comme candidats finaux, on en fait une liste de liste et dans ses sous-listes, on rassemble les candidats très proches, que l'on traitera ensemble
+        if not final2_candidates:
+            self.candidates = None
+            self.candidates_triangles = None
+            return None
+        final2_candidates = list(set(final2_candidates))
+        grouped_candidates = []
+        already_grouped = set()
+        for candidate in final2_candidates:
+            if candidate in already_grouped:
+                continue
+            group = [candidate]
+            for other_candidate in final2_candidates:
+                if other_candidate != candidate and other_candidate not in already_grouped:
+                    if np.linalg.norm(points[candidate] - points[other_candidate]) < 0.5:
+                        group.append(other_candidate)
+                        already_grouped.add(other_candidate)
+            grouped_candidates.append(group)
         
-        candidates_triangles = {}
-        idx=0
-        for simplex in self.tri.simplices:
-            if any(vertex in final2_candidates for vertex in simplex):
-                candidates_triangles[idx] = simplex.tolist()
-            idx+=1
+
+        self.candidates_triangles = []
+        for group in grouped_candidates:
+            candidates_triangles = {}
+            idx=0
+            for simplex in self.tri.simplices:
+                if any(vertex in group for vertex in simplex):
+                    candidates_triangles[idx] = simplex.tolist()
+                idx+=1
+            self.candidates_triangles.append(candidates_triangles)
         
+        #print(f"nombre de triangles candidats : {len(self.candidates_triangles[0])}")
         self.candidates = final2_candidates
         
-        self.candidates_triangles = candidates_triangles
+        
         
         return None
 
-    def empty_zones(self, area_threshold=4, radius=1):
+    def empty_zones(self, area_threshold=2, radius=2):
         
         points = self.points
         tri = self.tri
@@ -364,13 +390,16 @@ class Computation():
             if area > area_threshold:
                 empty_triangles[idx] = simplex.tolist()
             idx += 1
-        #print(f"triangles vides trouvés : {empty_triangles}")
+        
+        
         # Parmis ces candidats, on va vérifier que tous les sommets ont au moins 2 voisins proches
         #print(f"Nombre de triangles vides trouvés : {len(empty_triangles)}")
         if not empty_triangles or self.tree== None:
             self.empty_triangles = None
             return None
         filtered_empty_triangles = {}
+        #print(f"triangles vides trouvés : {empty_triangles}")
+
         
         for id,triangle in empty_triangles.items():
             potentiel = True
@@ -379,19 +408,33 @@ class Computation():
                 neighbor_ids = self.tree.query_ball_point(points[i], r=radius)
                 
                 valid_neighbors = [nid for nid in neighbor_ids if nid != i]
-                
+                #print(f"Point {i} a {len(valid_neighbors)} voisins proches dans le triangle {id}, radius {radius}")
                 if len(valid_neighbors) < 2: #Au moins deux voisins proches
                     potentiel = False
             if potentiel:
                 filtered_empty_triangles[id] = triangle
-            
-        if not filtered_empty_triangles:
-            self.empty_triangles = None           
-        self.empty_triangles = filtered_empty_triangles
+        #On fait comme pour les candidats, on regroupe les triangles vides par groupe de triangles proches, à la fin on obtient une liste de dictionnaires de triangles adjacents
+        visited_triangles = set()
+        grouped_empty_triangles = []
+        for triangle_id, triangle in filtered_empty_triangles.items():
+            if triangle_id in visited_triangles:
+                continue
+            group = {triangle_id: triangle}
+            visited_triangles.add(triangle_id)
+            for other_triangle_id, other_triangle in filtered_empty_triangles.items():
+                if other_triangle_id == triangle_id or other_triangle_id in visited_triangles:
+                    continue
+                # Vérifier si les triangles partagent un sommet
+                if set(triangle) & set(other_triangle):
+                    group[other_triangle_id] = other_triangle
+                    visited_triangles.add(other_triangle_id)
+            grouped_empty_triangles.append(group)
+        self.empty_triangles = grouped_empty_triangles
         #print(f"Nombre de triangles vides filtrés : {len(self.empty_triangles)}")
         if len(self.empty_triangles) == 0:
             self.empty_triangles = None
             return None
+        #print(f"Nombre de triangles vides filtrés : {len(self.empty_triangles)}")
         return None
 
     def edge_length(self, p1, p2):
@@ -434,24 +477,7 @@ class Computation():
 
         return max_edge,perimeter, border_edges,total_area
 
-    def expansion(self, type,ratio_threshold,min_density,nb_min_region=4,ratio_area=1.4):
-        
-        #nb_iterations = int(time.time())% 20 
-        if type=="expansion_candidate":
-            
-            if self.candidates_triangles is None or self.points is None or self.tri is None:
-                self.region_candidates = None
-                return None
-            triangles = self.candidates_triangles
-        elif type=="expansion_empty":
-            if self.empty_triangles is None or self.points is None or self.tri is None:
-                self.region_empty = None
-                return None
-            triangles = self.empty_triangles
-        else:
-            print(f"Type '{type}' non reconnu pour expansion.")
-            return None
-        #print(f"debut expansion de type {type} avec {len(self.tri.simplices)} triangles")
+    def expansion(self,triangles, type,ratio_threshold,min_density,nb_min_region=4,ratio_area=1.4):
         points = self.points
         tri = self.tri
         #print(f"triangles keys : {triangles.keys()}")
@@ -498,25 +524,53 @@ class Computation():
         density = perimeter/len(border_edges) if perimeter > 0 else 0
         #print(f"Densité de la région {type} : {density:.2f} (nombre de bords : {len(border_edges)}, périmètre : {perimeter:.2f})")
         if type == "expansion_candidate":
+            #print(f"candidates : {self.candidates},border_edges : {len(border_edges)}, perimeter : {perimeter:.2f}, total_area : {total_area:.2f}, ratio_area : {ratio_area}")
             #print(f"inegalité : {perimeter*perimeter:.2f} > 1.4*4*3.14*{total_area:.2f} = {1.4*4*3.14*total_area:.2f}")
-            if (len(region) < nb_min_region or density > min_density or max_edge > 3 
-            or len(self.candidates)*4 >= len(border_edges) or perimeter*perimeter>ratio_area*4*3.14*total_area
+            if (len(region) < nb_min_region or density > min_density or max_edge > 4.5 
+            #or len(self.candidates)*4 >= len(border_edges) 
+            or perimeter*perimeter>ratio_area*4*3.14*total_area
             or len(border_edges)<7): #Il faut au moins 4 fois plus de bords que de candidats pour l'expansion
-                if  perimeter*perimeter>ratio_area*4*3.14*total_area:
-                    print(f"inegalité : {perimeter*perimeter:.2f} > {ratio_area}*4*3.14*{total_area:.2f} = {ratio_area*4*3.14*total_area:.2f}")
-                self.region_candidates = None
-                self.candidates = None
-                self.candidates_triangles = None
+                if False:
+                    if  perimeter*perimeter>ratio_area*4*3.14*total_area:
+                        print(f"inegalité : {perimeter*perimeter:.2f} > {ratio_area}*4*3.14*{total_area:.2f} = {ratio_area*4*3.14*total_area:.2f}")
+                    if len(border_edges)<7:
+                        print(f"Pas assez de bords pour l'expansion candidates (seulement {len(border_edges)} trouvés).")
+                    if density > min_density:
+                        print(f"Densité trop élevée pour l'expansion candidates : {density:.2f}, min : {min_density} (périmètre : {perimeter:.2f}, nombre de bords : {len(border_edges)})")
+                    if max_edge > 4.5:
+                        print(f"Expansion candidates rejetée car le côté maximal {max_edge:.2f} est supérieur à 4.5.")
+                    if len(region) < nb_min_region:
+                        print(f"Pas assez de triangles candidats pour l'expansion candidates (seulement {len(region)} trouvés).")
+                    
+                #self.region_candidates = None
+                #self.candidates = None
+                #self.candidates_triangles = None
                 #print(f"Pas assez de triangles candidats pour l'expansion (seulement {len(region)} trouvés).")
+                return
             else:
-                self.region_candidates = region
+                self.region_candidates+=region
+                # Fusionner les doublons dans self.region_candidates
+                self.region_candidates = list(set(self.region_candidates))
         elif type == "expansion_empty":
             if len(region) < nb_min_region or density > min_density or max_edge > 3 or perimeter*perimeter>ratio_area*4*3.14*total_area or len(border_edges)<7:
-                self.region_empty = None
-                self.empty_triangles = None
+                #self.region_empty = None
+                #self.empty_triangles = None
                 #print(f"Pas assez de triangles vides pour l'expansion vide (seulement {len(region)} trouvés).")
+                if False:
+                    if perimeter*perimeter>ratio_area*4*3.14*total_area:
+                        print(f"inegalité : {perimeter*perimeter:.2f} > {ratio_area}*4*3.14*{total_area:.2f} = {ratio_area*4*3.14*total_area:.2f}")
+                    if len(border_edges)<7:
+                        print(f"Pas assez de bords pour l'expansion vide (seulement {len(border_edges)} trouvés).")
+                    if density > min_density:
+                        print(f"Densité trop élevée pour l'expansion vide : {density:.2f}, min : {min_density} (périmètre : {perimeter:.2f}, nombre de bords : {len(border_edges)})")
+                    if max_edge > 3:
+                        print(f"Expansion vide rejetée car le côté maximal {max_edge:.2f} est supérieur à 3.")
+                    if len(region) < nb_min_region:
+                        print(f"Pas assez de triangles vides pour l'expansion vide (seulement {len(region)} trouvés).")
             else:
-                self.region_empty = region
+                self.region_empty += region
+                # Fusionner les doublons dans self.region_empty
+                self.region_empty = list(set(self.region_empty))
         #if len(region) < nb_min_region:print(f"Pas assez de triangles pour l'expansion {type} (seulement {len(region)} trouvés).")
         #if density>min_density:print(f"Densité trop élevée pour l'expansion {type} : {density:.2f}, min : {min_density} (périmètre : {perimeter:.2f}, nombre de bords : {len(border_edges)})")
         #if max_edge > 2:print(f"Expansion {type} rejetée car le côté maximal {max_edge:.2f} est supérieur à 2.")
@@ -524,6 +578,21 @@ class Computation():
         return
     
     def expansion_candidates(self, ratio_threshold=1.3,min_density=1.5, nb_min_region=4, ratio_area=1.4):
-        self.expansion("expansion_candidate", ratio_threshold,min_density, nb_min_region, ratio_area)
+        if self.candidates_triangles is None or self.points is None or self.tri is None or self.candidates is None:
+                self.region_candidates = None
+                return None
+        self.region_candidates = []
+        #print(f"Début de l'expansion candidates avec {self.candidates} candidats.")
+        for triangles in self.candidates_triangles:
+            self.expansion(triangles, "expansion_candidate", ratio_threshold,min_density, nb_min_region, ratio_area)
+        
+        
     def expansion_empty(self, ratio_threshold=1.3, min_density=1.5, nb_min_region=4, ratio_area=1.4):
-        self.expansion("expansion_empty", ratio_threshold, min_density, nb_min_region, ratio_area)
+        if self.empty_triangles is None or self.points is None or self.tri is None:
+                self.region_empty = None
+                return None
+        self.region_empty = []
+        #print(f"Début de l'expansion vide avec {len(self.empty_triangles)} triangles vides.")
+        for triangles in self.empty_triangles:
+            self.expansion(triangles, "expansion_empty", ratio_threshold, min_density, nb_min_region, ratio_area)
+     

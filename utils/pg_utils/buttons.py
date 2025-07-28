@@ -32,7 +32,7 @@ class Parametres():
     def add_button(self, label,text,width, active):
         i = len(self.buttons)
         button = Button(
-            rect=(width + 25, 10 + i * 60,200, 50),  # Position et taille par défaut
+            rect=(width + 25, 80 + i * 60,200, 50),  # Position et taille par défaut
             text=text,
             font=pygame.font.Font(None, 24),
             on_color=(0, 255, 0),
@@ -44,6 +44,7 @@ class Parametres():
         for button in (self.buttons.values()):
             button.draw(screen)  # Positionnement vertical des boutons
         pygame.draw.rect(screen, (255, 0, 0), (0, 0, width,height), 1)  # Draw a red rectangle around the screen
+        pygame.draw.rect(screen, (255, 0, 0), (width-1, 0, 251, 70), 1)
     def handle_event(self, event):
         for btn in self.buttons.values():
             result = btn.handle_event(event)

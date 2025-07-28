@@ -1,18 +1,20 @@
 from utils.affichage import Affichage
 from utils.reception_osc import Reception_osc
 from utils.computation import *
+from utils.area_life import Life
+from utils.emission_osc import Emission_osc
 import time
 import threading
 import pygame as pg
 
-ip = "192.168.0.125" 
-port_client = 12001
 recept_port = 3335
 
 
 def afficher():
     visualiser = Affichage(13.08, 7.77,sender=True)
     computation= Computation()
+    life = Life(min_ratio=0.3, life_threshold=4)
+    osc_sender = Emission_osc(ip="192.168.10.240", port=3336)
     visualiser.add_button("points", "Points",True)
     visualiser.add_button("triangles", "Triangles Delaunay",True)
     visualiser.add_button("zones", "Candidats détectées",True)
@@ -22,7 +24,7 @@ def afficher():
     visualiser.add_button("areas", "Aires de Voronoi")
     visualiser.add_button("triangles_counts", "Nb voisins")
     visualiser.add_button("ids", "IDs")
-    visualiser.add_button("final", "Finalisation",False)
+    visualiser.add_button("final", "Finalisation",True)
     running=True
     while running and not stop_event.is_set():
         for event in pg.event.get():
@@ -39,10 +41,11 @@ def afficher():
         positions = osc.get_positions()
         ages = osc.get_ages()
         computation.computation(positions,ages,width, height)
-        computation.personnes_centrales(n_triangles=8,distance_min=0.6,angle_max=75,id_to_track=[])
-        computation.empty_zones(area_threshold=2, radius=1.5)
-        computation.expansion_candidates(ratio_threshold=1.4, min_density=1.2,ratio_area=1.4, nb_min_region=6)
-        computation.expansion_empty(ratio_threshold=1.4,min_density=1.5,ratio_area=1.4, nb_min_region=6)
+        computation.personnes_centrales(n_triangles=8,distance_min=1.2,angle_max=100,id_to_track=[])
+        computation.empty_zones(area_threshold=3, radius=3)
+        computation.expansion_candidates(ratio_threshold=1.4, min_density=1.5,ratio_area=2, nb_min_region=6)
+        computation.expansion_empty(ratio_threshold=1.4,min_density=1.5,ratio_area=2, nb_min_region=6)
+        life.update(computation)
         visualiser.clear()
         visualiser.draw_expansion_empty(computation,"expansion_empty")
         visualiser.draw_empty(computation,"triangles_v")
@@ -54,6 +57,8 @@ def afficher():
         visualiser.draw_counts(computation,5,"triangles_counts")
         visualiser.draw_point_areas(computation,"areas")
         visualiser.draw_ids(computation,"ids")
+        visualiser.draw_area_life(life)
+        osc_sender.envoi("/area_on", life.area_on)
         visualiser.update()
     visualiser.quit()
 
