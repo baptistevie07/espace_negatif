@@ -1,6 +1,7 @@
 from utils.affichage import Affichage
 from utils.reception_osc import Reception_osc
 from utils.computation import *
+from utils.area_life import Life
 import time
 import threading
 import pygame as pg
@@ -11,6 +12,7 @@ recept_port = 3335
 def afficher():
     visualiser = Affichage(13.08, 7.77,sender=True)
     computation= Computation()
+    life = Life(min_ratio=0.5, life_threshold=2)
     visualiser.add_button("points", "Points",True)
     visualiser.add_button("triangles", "Triangles Delaunay",True)
     visualiser.add_button("zones", "Candidats détectées",True)
@@ -41,6 +43,7 @@ def afficher():
         computation.empty_zones(area_threshold=3, radius=3)
         computation.expansion_candidates(ratio_threshold=1.4, min_density=1.2,ratio_area=1.7, nb_min_region=6)
         computation.expansion_empty(ratio_threshold=1.4,min_density=1.5,ratio_area=1.7, nb_min_region=6)
+        life.update(computation)
         visualiser.clear()
         visualiser.draw_expansion_empty(computation,"expansion_empty")
         visualiser.draw_empty(computation,"triangles_v")
@@ -52,8 +55,7 @@ def afficher():
         visualiser.draw_counts(computation,5,"triangles_counts")
         visualiser.draw_point_areas(computation,"areas")
         visualiser.draw_ids(computation,"ids")
-        visualiser.draw_area_life(time.time()%10, 5)
-        print(time.time()%10)
+        visualiser.draw_area_life(life)
         visualiser.update()
     visualiser.quit()
 

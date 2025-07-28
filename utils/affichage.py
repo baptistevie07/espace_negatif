@@ -4,6 +4,7 @@ import numpy as np
 import math as ma
 from utils.pg_utils.buttons import Parametres
 from utils.envoi_ndi import NDI_Sender
+import time
 
 class Affichage:
     def __init__(self, width, height,sender=True,nb_max_pixels=1000):
@@ -272,15 +273,21 @@ class Affichage:
                 triangles_dict[idx] = [points[triangle[0]], points[triangle[1]], points[triangle[2]]]
         return triangles_dict
     
-    def draw_area_life(self, life, life_threshold):
+    def draw_area_life(self, life):
+        life_time = time.time() - life.born
+        if not life.area_on:
+            life_time = 0
+        life_threshold = life.life_threshold
         pg.draw.rect(self.screen, (128, 128, 128), (self.width +15, 25, 220, 20))
-        if life>life_threshold:
+        if life_time>life_threshold:
             color = (0, 255, 0)
             pg.draw.rect(self.screen, color, (self.width +15, 25, 220, 20))
             font=pg.font.Font(None, 24)
-            txt_surface = font.render(str(int(life))+" secondes", True, (255,255,255))
+            txt_surface = font.render(str(int(life_time))+" secondes", True, (255,255,255))
             txt_rect = txt_surface.get_rect(center=(self.width + 15 + 110, 25 + 10))
             self.screen.blit(txt_surface, txt_rect)
         else:
             color = (255, 0, 0)
-            pg.draw.rect(self.screen, color, (self.width +15, 25, int(220*life/life_threshold), 20))
+            pg.draw.rect(self.screen, color, (self.width +15, 25, int(220*life_time/life_threshold), 20))
+        pg.draw.rect(self.screen, (255, 255, 255), (self.width + 15, 45, 220*sum(life.count) / len(life.count), 10))
+        pg.draw.line(self.screen, (255, 0,0), (self.width + 15 + int(220*life.min_ratio), 45), (self.width + 15 + int(220*life.min_ratio), 55), 1)
