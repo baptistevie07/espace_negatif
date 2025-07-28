@@ -12,7 +12,7 @@ recept_port = 3335
 def afficher():
     visualiser = Affichage(13.08, 7.77,sender=True)
     computation= Computation()
-    life = Life(min_ratio=0.5, life_threshold=2)
+    life = Life(min_ratio=0.3, life_threshold=4)
     visualiser.add_button("points", "Points",True)
     visualiser.add_button("triangles", "Triangles Delaunay",True)
     visualiser.add_button("zones", "Candidats détectées",True)
@@ -22,7 +22,7 @@ def afficher():
     visualiser.add_button("areas", "Aires de Voronoi")
     visualiser.add_button("triangles_counts", "Nb voisins")
     visualiser.add_button("ids", "IDs")
-    visualiser.add_button("final", "Finalisation",False)
+    visualiser.add_button("final", "Finalisation",True)
     running=True
     while running and not stop_event.is_set():
         for event in pg.event.get():
@@ -39,10 +39,10 @@ def afficher():
         positions = osc.get_positions()
         ages = osc.get_ages()
         computation.computation(positions,ages,width, height)
-        computation.personnes_centrales(n_triangles=8,distance_min=1.2,angle_max=75,id_to_track=[])
+        computation.personnes_centrales(n_triangles=8,distance_min=1.2,angle_max=100,id_to_track=[])
         computation.empty_zones(area_threshold=3, radius=3)
-        computation.expansion_candidates(ratio_threshold=1.4, min_density=1.2,ratio_area=1.7, nb_min_region=6)
-        computation.expansion_empty(ratio_threshold=1.4,min_density=1.5,ratio_area=1.7, nb_min_region=6)
+        computation.expansion_candidates(ratio_threshold=1.4, min_density=1.5,ratio_area=2, nb_min_region=6)
+        computation.expansion_empty(ratio_threshold=1.4,min_density=1.5,ratio_area=2, nb_min_region=6)
         life.update(computation)
         visualiser.clear()
         visualiser.draw_expansion_empty(computation,"expansion_empty")
