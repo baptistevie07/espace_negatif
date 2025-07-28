@@ -52,6 +52,8 @@ def afficher():
         visualiser.draw_counts(computation,5,"triangles_counts")
         visualiser.draw_point_areas(computation,"areas")
         visualiser.draw_ids(computation,"ids")
+        visualiser.draw_area_life(time.time()%10, 5)
+        print(time.time()%10)
         visualiser.update()
     visualiser.quit()
 

@@ -1,3 +1,4 @@
+from matplotlib import text
 import pygame as pg
 import numpy as np
 import math as ma
@@ -270,3 +271,16 @@ class Affichage:
             if len(triangle) == 3:
                 triangles_dict[idx] = [points[triangle[0]], points[triangle[1]], points[triangle[2]]]
         return triangles_dict
+    
+    def draw_area_life(self, life, life_threshold):
+        pg.draw.rect(self.screen, (128, 128, 128), (self.width +15, 25, 220, 20))
+        if life>life_threshold:
+            color = (0, 255, 0)
+            pg.draw.rect(self.screen, color, (self.width +15, 25, 220, 20))
+            font=pg.font.Font(None, 24)
+            txt_surface = font.render(str(int(life))+" secondes", True, (255,255,255))
+            txt_rect = txt_surface.get_rect(center=(self.width + 15 + 110, 25 + 10))
+            self.screen.blit(txt_surface, txt_rect)
+        else:
+            color = (255, 0, 0)
+            pg.draw.rect(self.screen, color, (self.width +15, 25, int(220*life/life_threshold), 20))

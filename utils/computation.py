@@ -19,6 +19,7 @@ class Computation():
         self.region_candidates = None
         self.tree = None  # cKDTree pour les recherches de voisinage
         self.neighbors = None  # Dictionnaire pour les voisins de Delaunay
+        self.area_life = 0
 
     def afficher(self, id_to_track, candidates, message):
         #si candidates est un dictionnaire, on prend les clés et on en fait des int
