@@ -23,13 +23,6 @@ class Reception_osc:
         print("CTRL+C pour quitter le programme")
         print("")
 
-    def add_out(self, ip, port):
-        """Ajoute un couple IP, port de sortie"""
-        self.clients.append(SimpleUDPClient(ip, port))
-        
-    def envoi(self,adresse, valeurs):
-        for client in self.clients:
-            client.send_message(adresse, valeurs)
 
     # Callback générique
     def address_logger(self,address, *args):
@@ -40,8 +33,6 @@ class Reception_osc:
             
             self.scene_width = args[0]
             self.scene_height = args[2]
-            self.envoi("/scene/height", self.scene_height)
-            self.envoi("/scene/width", self.scene_width)
             
         
             

@@ -2,6 +2,7 @@ from utils.affichage import Affichage
 from utils.reception_osc import Reception_osc
 from utils.computation import *
 from utils.area_life import Life
+from utils.emission_osc import Emission_osc
 import time
 import threading
 import pygame as pg
@@ -13,6 +14,7 @@ def afficher():
     visualiser = Affichage(13.08, 7.77,sender=True)
     computation= Computation()
     life = Life(min_ratio=0.3, life_threshold=4)
+    osc_sender = Emission_osc(ip="192.168.10.240", port=3336)
     visualiser.add_button("points", "Points",True)
     visualiser.add_button("triangles", "Triangles Delaunay",True)
     visualiser.add_button("zones", "Candidats détectées",True)
@@ -56,6 +58,7 @@ def afficher():
         visualiser.draw_point_areas(computation,"areas")
         visualiser.draw_ids(computation,"ids")
         visualiser.draw_area_life(life)
+        osc_sender.envoi("/area_on", life.area_on)
         visualiser.update()
     visualiser.quit()
 

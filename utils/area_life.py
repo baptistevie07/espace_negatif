@@ -1,5 +1,6 @@
 import time
 
+
 class Life:
     def __init__(self, min_ratio, life_threshold=10):
         self.min_ratio = min_ratio
@@ -22,6 +23,7 @@ class Life:
             self.count.append(0)
         if sum(self.count) / len(self.count) < self.min_ratio:
             self.born = time.time()
-            self.area_on = False
-        else:
+        if time.time() - self.born > self.life_threshold:
             self.area_on = True
+        else:
+            self.area_on = False

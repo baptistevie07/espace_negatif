@@ -530,7 +530,7 @@ class Computation():
             #or len(self.candidates)*4 >= len(border_edges) 
             or perimeter*perimeter>ratio_area*4*3.14*total_area
             or len(border_edges)<7): #Il faut au moins 4 fois plus de bords que de candidats pour l'expansion
-                if True:
+                if False:
                     if  perimeter*perimeter>ratio_area*4*3.14*total_area:
                         print(f"inegalité : {perimeter*perimeter:.2f} > {ratio_area}*4*3.14*{total_area:.2f} = {ratio_area*4*3.14*total_area:.2f}")
                     if len(border_edges)<7:
