@@ -7,8 +7,7 @@ from pythonosc.osc_server import BlockingOSCUDPServer
 
 
 class Reception_osc:
-    def __init__(self, port_in):
-        self.port_in = port_in
+    def __init__(self, ip, port_in):
         self.clients = []
         self.positions={}
         self.ages = {}
@@ -17,9 +16,9 @@ class Reception_osc:
 
         dispatcher = Dispatcher()
         dispatcher.map("/au/*", self.address_logger)
-        self.server = BlockingOSCUDPServer(("127.0.0.1", self.port_in), dispatcher)
+        self.server = BlockingOSCUDPServer((ip, port_in), dispatcher)
         print("")
-        print("Programme de réception des positions en cours, port ",self.port_in," ...")
+        print("Programme de réception des positions en cours, ip ", ip, " port ", port_in, " ...")
         print("CTRL+C pour quitter le programme")
         print("")
 

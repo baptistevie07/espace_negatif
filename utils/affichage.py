@@ -275,8 +275,7 @@ class Affichage:
     
     def draw_area_life(self, life):
         life_time = time.time() - life.born
-        if not life.area_on:
-            life_time = 0
+        
         life_threshold = life.life_threshold
         pg.draw.rect(self.screen, (128, 128, 128), (self.width +15, 25, 220, 20))
         if life_time>life_threshold:
