@@ -9,6 +9,7 @@ Il renvoit une texture NDI pouvant être par la suite utilisé par des artistes 
 
 | ![Output](media/Vue_finale.PNG) | ![Output 2](media/Vue_finale2.PNG) |
 |-|-|
+
 *Visualisation finale : Vues verticale du nuage de points d'une foule, obtenu avec 4 caméras Orbbec, en rouge la texture de l'espace négatif détecté, malgré des gens au centre centre*
 
 ## Installation
