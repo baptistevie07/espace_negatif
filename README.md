@@ -7,10 +7,8 @@ Ce programme a été fait dans le cadre du prototypage de BEATS, expérience imm
 
 Il renvoit une texture NDI pouvant être par la suite utilisé par des artistes visuels, ainsi qu'un flux OSC indiquant si un espace a été trouvé. Le flux est ici traité dans TouchDesigner.
 
-<p align="center">
-    <img src="media/Vue_finale.PNG" alt="Output" width="45%"/>
-    <img src="media/Vue_finale2.PNG" alt="Output 2" width="45%"/>
-</p>
+| ![Output](media/Vue_finale.PNG) | ![Output 2](media/Vue_finale2.PNG) |
+|-|-|
 *Visualisation finale : Vues verticale du nuage de points d'une foule, obtenu avec 4 caméras Orbbec, en rouge la texture de l'espace négatif détecté, malgré des gens au centre centre*
 
 ## Installation
