@@ -42,11 +42,20 @@ pip install -r requirements.txt
 
 Les programmes Python, Augmenta et TouchDesigner peuvent tourner sur des ordinateurs différents ou non. 127.0.0.1 pour rester en local.
 
-- Dans le fichier ```main.py```, modifier l'adresse IP de l'ordinateur avec TouchDesigner, ligne 17 :
+- Dans le fichier ```main.py```, modifier l'adresse IP de l'ordinateur avec TouchDesigner, ainsi que celle de l'ordinateur Augmenta, ligne 10, par exemple :
 ```python
-osc_sender = Emission_osc(ip="192.168.10.240", port=3336)
+augmenta_ip = "127.0.0.1"
+augmenta_port = 3335
+touchdesigner_ip = "192.168.10.239"
+touchdesigner_port = 3336
 ```
-- Dans Augmenta, si vous n'utilisez pas le fichier fourni dans le repo, paramétrez un output Augmenta V3, indiquez l'IP de l'ordinateur faisant tourner Python, port 3335 par défault. Activez ```Send Age```.
+- Dans Augmenta - Backend GUI, si vous n'utilisez pas le fichier fourni dans le repo, paramétrez un output Augmenta V3, indiquez l'IP de l'ordinateur faisant tourner Python, port 3335 par défault. Activez ```Send Age```. Si l'on prend l'exemple de Beats, vous pouvez pour tester :
+    - Aller sur le node Cloud Recorder 1
+    - Choisir le directory avec l'enregistrement `ShowFinal26Juin22.star`
+    - Choisir ensuite ce même enregistrement dans `Record file name`
+    - Une loop range [0.8, 0.92] permet de se focusser sur les cercles du show
+    - Play et gérer la progression grâce au slider. 
+    - Pour visualiser : 127.0.0.1:8080
 
 - Dans le fichier TouchDesigner, entrez l'adresse IP de l'ordinateur Augmenta au niveau du plugin de visualisation (```Augmentadat1```). Une fois le programme Python lancé, le flux NDI de la texture sera à l'adresse "Espace_Negatif".
 
@@ -64,14 +73,34 @@ La détection d'espaces négatifs fonctionne grâce à trois instances fonctionn
 - Python ([```main.py```](./main.py)) : Recherche d'espaces négatifs par triangulation des positions des clusters, renvoit un flux ndi avec l'espace en blanc si détecté. Interface PyGame pour visualiser.
 - TouchDesigner : Visualisation de la zone détectée + affichage du pointcloud pour vérifier la cohérence de la détection.
 
-Afficher schéma des flux
-
 ## Algorithme de détection
 
-La détection des espaces négatifs est basée sur une triangulation de Delauney : on construit un système de triangles reliant toutes les coordonnées des clusters et on en tire un certain nombre de propriétés. Tout est calculé dans [```computation.py```](./utils/computation.py). Pour la triangulation, on exclut les les clusters de moins de 10 frames d'âge, qui risquent d'être un glitch.
+La détection des espaces négatifs est basée sur une triangulation de Delauney : on construit un système de triangles reliant toutes les coordonnées des clusters et on en tire un certain nombre de propriétés. Tout est calculé dans [```computation.py```](./utils/computation.py). Pour la triangulation, on exclut les clusters de moins de 10 frames d'âge, qui risquent d'être un glitch. Les variables gérant les paramètres suivants sont toutes modifiables au début de main.py :
+```python
+# Variables de recherche (décrites ci-dessous)
+n_triangles = 8
+distance_min = 1.2
+angle_max = 100
+min_count = 2
+min_dist = 3
+ratio_threshold = 1.4
+nb_min_region = 6
+min_density = 1.5
+max_dist_between_2_persons = 4.5
+ratio_area = 2
+min_ratio = 0.3
+life_threshold = 4
+```
 
-![Triangulation](media/Triangulation.PNG)
-*Triangulation de Delaunay appliquée aux clusters détectés dans la foule.*
+## Visualisation
+Le rendu final de la texture est en sortie du programme TouchDesigner. Une interface PyGame est disponible pour faciliter l'évaluation des détections et leurs causes. La fenètre est de cette forme :
+
+![Interface](media/Interface.PNG)
+*Interface Pygame*
+
+Les boutons sur la droite permettent d'afficher ou non certains moment clés dans la détection des espaces négatifs. 
+
+En haut à droite il y a deux sliders : celui en blanc est le taux de frames avec des espaces négatifs trouvés parmi les dernières 100 frames. La ligne rouge est le threshold (```min_ratio```) à dépasser pour considérer que c'est un espace négatif et pas un glitch. Celui en rouge indique le temps à attendre pour confirmer la présence d'un espace négatif. Il affiche ensuite la durée de vie de l'espace en question.
 
 ### Recherches de cœurs d'espaces négatifs
 
@@ -129,4 +158,4 @@ Ajouter image
 On a a priori détecté un espace négatif. Ce calcul a été fait sur une seule frame, qui peut comporter de faux clusters d'Augmenta. On va donc essayer de moyenner le résultat d'une seule frame. On procède de manière parallèle pour :
 
 - Eviter des glitchs dans la texture finale, côté TouchDesigner. Concrètement on moyenne la texture toutes les 5 frames précédentes, pendant 10 frames. On conserve chaque pixel qui est apparu suffisamment de fois, dans ces 10 frames, en définissant un threshold.
-- Définir si il y a réellement un espace négatif qui a été détecté (pour éviter de moyenner entre eux des faux-positifs), côté Python. La classe ```Life``` regarde en permanence dans les 100 dernières frames, combien ont détecté un espace négatif. Si il y a un ratio de détections positives d'au moins ```min_ratio``` (0.3), il y a de bonnes chances d'avoir un espace négatif sous les yeux. Si cette situation dure plus de ```life_threshold``` (4) secondes, c'est un espace négatif. On envoit alors à TouchDesigner par OSC que c'est un espace négatif, et il affiche sa moyenne des textures précédentes.
+- Définir si il y a réellement un espace négatif qui a été détecté (pour éviter de moyenner entre eux des faux-positifs), côté Python. La classe ```Life``` regarde en permanence dans les 100 dernières frames, combien ont détecté un espace négatif. Si il y a un ratio de détections positives d'au moins ```min_ratio``` (0.3), il y a de bonnes chances d'avoir un espace négatif sous les yeux. Si cette situation dure plus de ```life_threshold``` (3) secondes, c'est un espace négatif. On envoit alors à TouchDesigner par OSC que c'est un espace négatif, et il affiche sa moyenne des textures précédentes.

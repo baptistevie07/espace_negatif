@@ -477,7 +477,7 @@ class Computation():
 
         return max_edge,perimeter, border_edges,total_area
 
-    def expansion(self,triangles, type,ratio_threshold,min_density,nb_min_region=4,ratio_area=1.4):
+    def expansion(self,triangles, type,ratio_threshold,min_density,nb_min_region=4,ratio_area=1.4, max_dist_between_2_persons=4.5):
         points = self.points
         tri = self.tri
         #print(f"triangles keys : {triangles.keys()}")
@@ -526,7 +526,7 @@ class Computation():
         if type == "expansion_candidate":
             #print(f"candidates : {self.candidates},border_edges : {len(border_edges)}, perimeter : {perimeter:.2f}, total_area : {total_area:.2f}, ratio_area : {ratio_area}")
             #print(f"inegalité : {perimeter*perimeter:.2f} > 1.4*4*3.14*{total_area:.2f} = {1.4*4*3.14*total_area:.2f}")
-            if (len(region) < nb_min_region or density > min_density or max_edge > 4.5 
+            if (len(region) < nb_min_region or density > min_density or max_edge > max_dist_between_2_persons 
             #or len(self.candidates)*4 >= len(border_edges) 
             or perimeter*perimeter>ratio_area*4*3.14*total_area
             or len(border_edges)<7): #Il faut au moins 4 fois plus de bords que de candidats pour l'expansion
@@ -537,8 +537,8 @@ class Computation():
                         print(f"Pas assez de bords pour l'expansion candidates (seulement {len(border_edges)} trouvés).")
                     if density > min_density:
                         print(f"Densité trop élevée pour l'expansion candidates : {density:.2f}, min : {min_density} (périmètre : {perimeter:.2f}, nombre de bords : {len(border_edges)})")
-                    if max_edge > 4.5:
-                        print(f"Expansion candidates rejetée car le côté maximal {max_edge:.2f} est supérieur à 4.5.")
+                    if max_edge > max_dist_between_2_persons:
+                        print(f"Expansion candidates rejetée car le côté maximal {max_edge:.2f} est supérieur à {max_dist_between_2_persons}.")
                     if len(region) < nb_min_region:
                         print(f"Pas assez de triangles candidats pour l'expansion candidates (seulement {len(region)} trouvés).")
                     
@@ -552,7 +552,7 @@ class Computation():
                 # Fusionner les doublons dans self.region_candidates
                 self.region_candidates = list(set(self.region_candidates))
         elif type == "expansion_empty":
-            if len(region) < nb_min_region or density > min_density or max_edge > 3 or perimeter*perimeter>ratio_area*4*3.14*total_area or len(border_edges)<7:
+            if len(region) < nb_min_region or density > min_density or max_edge > max_dist_between_2_persons or perimeter*perimeter>ratio_area*4*3.14*total_area or len(border_edges)<7:
                 #self.region_empty = None
                 #self.empty_triangles = None
                 #print(f"Pas assez de triangles vides pour l'expansion vide (seulement {len(region)} trouvés).")
@@ -563,8 +563,8 @@ class Computation():
                         print(f"Pas assez de bords pour l'expansion vide (seulement {len(border_edges)} trouvés).")
                     if density > min_density:
                         print(f"Densité trop élevée pour l'expansion vide : {density:.2f}, min : {min_density} (périmètre : {perimeter:.2f}, nombre de bords : {len(border_edges)})")
-                    if max_edge > 3:
-                        print(f"Expansion vide rejetée car le côté maximal {max_edge:.2f} est supérieur à 3.")
+                    if max_edge > max_dist_between_2_persons:
+                        print(f"Expansion vide rejetée car le côté maximal {max_edge:.2f} est supérieur à {max_dist_between_2_persons}.")
                     if len(region) < nb_min_region:
                         print(f"Pas assez de triangles vides pour l'expansion vide (seulement {len(region)} trouvés).")
             else:
@@ -576,23 +576,22 @@ class Computation():
         #if max_edge > 2:print(f"Expansion {type} rejetée car le côté maximal {max_edge:.2f} est supérieur à 2.")
             
         return
-    
-    def expansion_candidates(self, ratio_threshold=1.3,min_density=1.5, nb_min_region=4, ratio_area=1.4):
+
+    def expansion_candidates(self, ratio_threshold=1.3,min_density=1.5, nb_min_region=4, ratio_area=1.4, max_dist_between_2_persons=4.5):
         if self.candidates_triangles is None or self.points is None or self.tri is None or self.candidates is None:
                 self.region_candidates = None
                 return None
         self.region_candidates = []
         #print(f"Début de l'expansion candidates avec {self.candidates} candidats.")
         for triangles in self.candidates_triangles:
-            self.expansion(triangles, "expansion_candidate", ratio_threshold,min_density, nb_min_region, ratio_area)
-        
-        
-    def expansion_empty(self, ratio_threshold=1.3, min_density=1.5, nb_min_region=4, ratio_area=1.4):
+            self.expansion(triangles, "expansion_candidate", ratio_threshold,min_density, nb_min_region, ratio_area, max_dist_between_2_persons)
+
+
+    def expansion_empty(self, ratio_threshold=1.3, min_density=1.5, nb_min_region=4, ratio_area=1.4, max_dist_between_2_persons=4.5):
         if self.empty_triangles is None or self.points is None or self.tri is None:
                 self.region_empty = None
                 return None
         self.region_empty = []
         #print(f"Début de l'expansion vide avec {len(self.empty_triangles)} triangles vides.")
         for triangles in self.empty_triangles:
-            self.expansion(triangles, "expansion_empty", ratio_threshold, min_density, nb_min_region, ratio_area)
-     
+            self.expansion(triangles, "expansion_empty", ratio_threshold, min_density, nb_min_region, ratio_area, max_dist_between_2_persons)
