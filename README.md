@@ -1,11 +1,17 @@
-# espace_negatif
+# Détection d'espaces "négatifs" dans une foule en temps réel
 Baptiste Vié - Les 7 Doigts de la Main
 
 ## Contexte
 
-Ce programme a été fait dans le cadre du prototypeage de BEATS, expérience immersive et intéractive adaptée aux foules. Le but ici est de détecter les espaces vides ou quasi vides qui peuvent se créer dans une foule, afin de pouvoir par la suite faire des projections aux sol en réaction à la foule. Ce programme est basé sur les données du logiciel Augmenta.
+Ce programme a été fait dans le cadre du prototypage de BEATS, expérience immersive et intéractive adaptée aux foules. Le but ici est de détecter les espaces vides ou quasi vides qui peuvent se créer dans une foule, afin de pouvoir par la suite faire des projections aux sol en réaction à la foule. Ce programme est basé sur les données du logiciel Augmenta.
 
 Il renvoit une texture NDI pouvant être par la suite utilisé par des artistes visuels, ainsi qu'un flux OSC indiquant si un espace a été trouvé. Le flux est ici traité dans TouchDesigner.
+
+<p align="center">
+    <img src="media/Vue_finale.PNG" alt="Output" width="45%"/>
+    <img src="media/Vue_finale2.PNG" alt="Output 2" width="45%"/>
+</p>
+*Visualisation finale : Vues verticale du nuage de points d'une foule, obtenu avec 4 caméras Orbbec, en rouge la texture de l'espace négatif détecté, malgré des gens au centre centre*
 
 ## Installation
 
