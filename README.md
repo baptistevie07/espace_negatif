@@ -21,11 +21,11 @@ git clone https://github.com/baptistevie07/espace_negatif.git
 cd espace_negatif
 ```
 
-Créer un environnement virtuel
+Créer un environnement virtuel Python 3.10 (afin d'être compatible avec `ndi-python`)
 
 ```cmd
 # Windows
-py -m venv .venv
+py -3.10 -m venv .venv
 .\.venv\Scripts\activate
 ```
 
@@ -40,6 +40,7 @@ source .venvwsl/bin/activate
 Installer les dépendances :
 
 ```bash
+python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
