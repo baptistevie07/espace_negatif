@@ -49,32 +49,32 @@
   "layout": {
     "mainLayout": {
       "type": 1,
-      "width": 1920,
-      "height": 997,
+      "width": 767,
+      "height": 765,
       "direction": 2,
       "shifters": [
         {
           "type": 1,
-          "width": 1920,
-          "height": 997,
+          "width": 767,
+          "height": 765,
           "direction": 1,
           "shifters": [
             {
               "type": 1,
-              "width": 470,
-              "height": 997,
+              "width": 150,
+              "height": 765,
               "direction": 2,
               "shifters": [
                 {
                   "type": 1,
-                  "width": 470,
-                  "height": 260,
+                  "width": 150,
+                  "height": 203,
                   "direction": 1,
                   "shifters": [
                     {
                       "type": 0,
-                      "width": 307,
-                      "height": 260,
+                      "width": 150,
+                      "height": 203,
                       "currentContent": "Outputs",
                       "tabs": [
                         {
@@ -84,8 +84,8 @@
                     },
                     {
                       "type": 0,
-                      "width": 157,
-                      "height": 260,
+                      "width": 0,
+                      "height": 203,
                       "currentContent": "Sources",
                       "tabs": [
                         {
@@ -97,8 +97,8 @@
                 },
                 {
                   "type": 0,
-                  "width": 470,
-                  "height": 201,
+                  "width": 150,
+                  "height": 144,
                   "currentContent": "Hierarchy",
                   "tabs": [
                     {
@@ -108,8 +108,8 @@
                 },
                 {
                   "type": 0,
-                  "width": 470,
-                  "height": 315,
+                  "width": 150,
+                  "height": 258,
                   "currentContent": "Logger",
                   "tabs": [
                     {
@@ -119,21 +119,21 @@
                 },
                 {
                   "type": 0,
-                  "width": 470,
-                  "height": 201,
+                  "width": 150,
+                  "height": 142,
                   "tabs": null
                 }
               ]
             },
             {
               "type": 1,
-              "width": 760,
-              "height": 997,
+              "width": 150,
+              "height": 765,
               "direction": 2,
               "shifters": [
                 {
                   "type": 0,
-                  "width": 760,
+                  "width": 150,
                   "height": 68,
                   "currentContent": "Worlds",
                   "tabs": [
@@ -144,8 +144,8 @@
                 },
                 {
                   "type": 0,
-                  "width": 760,
-                  "height": 923,
+                  "width": 150,
+                  "height": 691,
                   "currentContent": "Node View",
                   "tabs": [
                     {
@@ -157,8 +157,8 @@
             },
             {
               "type": 0,
-              "width": 676,
-              "height": 997,
+              "width": 455,
+              "height": 765,
               "currentContent": "Inspector",
               "tabs": [
                 {
@@ -334,7 +334,7 @@
               {
                 "parameters": [
                   {
-                    "value": true,
+                    "value": false,
                     "controlAddress": "/locked"
                   },
                   {
@@ -371,7 +371,7 @@
                       {
                         "parameters": [
                           {
-                            "value": true,
+                            "value": false,
                             "controlAddress": "/locked"
                           },
                           {
@@ -460,7 +460,7 @@
                             "controlAddress": "/enabled"
                           },
                           {
-                            "value": true,
+                            "value": false,
                             "controlAddress": "/locked"
                           },
                           {
@@ -1565,11 +1565,11 @@
                             "controlAddress": "/viewUISize"
                           },
                           {
-                            "value": "C:/Users/Baptiste/Documents/espace_negatif/records_augmenta",
+                            "value": "C:/Users/bapti/Documents/7doigts/Sauvetage cloud",
                             "controlAddress": "/directory"
                           },
                           {
-                            "value": "rerecording_1",
+                            "value": "ShowFinal26Juin22",
                             "controlAddress": "/recordingFiles"
                           },
                           {
@@ -1581,7 +1581,7 @@
                             "controlAddress": "/recordFileName"
                           },
                           {
-                            "value": false,
+                            "value": true,
                             "controlAddress": "/overwrite"
                           },
                           {
@@ -1589,7 +1589,7 @@
                             "controlAddress": "/playAtLoad"
                           },
                           {
-                            "value": true,
+                            "value": false,
                             "controlAddress": "/passthroughEnabled"
                           },
                           {

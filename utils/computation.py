@@ -247,7 +247,6 @@ class Computation():
         return final_candidates
 
     def personnes_centrales(self, n_triangles, distance_min, angle_max, id_to_track=[]):
-        
         points = self.points
         tri = self.tri
         triangle_counts = self.triangle_counts
@@ -267,7 +266,7 @@ class Computation():
             self.candidates = None
             self.candidates_triangles = None
             return None
-        weak_candidates = {idx: count for idx, count in shared_counts.items() if n_triangles-2<=count<n_triangles}
+        weak_candidates = {idx: count for idx, count in candidates.items() if n_triangles-2<=count<n_triangles}
         #print("weak",weak_candidates)
         candidates = {idx: count for idx, count in candidates.items() if count >= n_triangles}
         #print("central",candidates)
@@ -280,7 +279,8 @@ class Computation():
                         print(f"Point {idx} conservé car relié à un autre candidat")
                     break
         id_to_track = self.afficher(id_to_track, candidates, f"moins de {n_triangles} triangles")
-        
+        #print(candidates)
+        self.enregistrement.save_data("n_triangles",dict(candidates))
         if not candidates:
             self.candidates = None
             self.candidates_triangles = None
@@ -602,3 +602,11 @@ class Computation():
     def arret_enregistrement(self):
         if self.enregistrement is not None:
             self.enregistrement.stop_csv()
+
+    def enregistrer(self):
+        if self.enregistrement is not None:
+            self.enregistrement.write_frame()
+
+    def init_frame(self):
+        if self.enregistrement is not None:
+            self.enregistrement.init_frame()
