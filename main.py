@@ -29,7 +29,7 @@ life_threshold = 3
 
 def afficher():
     visualiser = Affichage(13.08, 7.77,sender=True)
-    computation= Computation()
+    computation= Computation(filename="test1.csv")
     life = Life(min_ratio=min_ratio, life_threshold=life_threshold)
     
     visualiser.add_button("points", "Points",True)
@@ -48,6 +48,7 @@ def afficher():
             if event.type == pg.QUIT:
                 running = False
                 visualiser.quit()
+                computation.arret_enregistrement()
                 print("Arrêt du programme d'affichage")
                 stop_event.set()
                 return
@@ -79,6 +80,7 @@ def afficher():
         visualiser.update()
     osc_sender.envoi("/area_on", 0)  # Stop sending area_on when quitting
     visualiser.quit()
+    computation.arret_enregistrement()
     
 
 

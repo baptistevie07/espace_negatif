@@ -5,9 +5,10 @@ from scipy.spatial import cKDTree
 from collections import defaultdict
 import time
 from itertools import combinations
+from utils.enregistrement_donnees import enregistrement
 
 class Computation():
-    def __init__(self):
+    def __init__(self,filename=None):
         self.points = None
         self.tri = None
         self.triangle_counts = None
@@ -20,6 +21,8 @@ class Computation():
         self.tree = None  # cKDTree pour les recherches de voisinage
         self.neighbors = None  # Dictionnaire pour les voisins de Delaunay
         self.area_life = 0
+        if filename is not None:
+            self.enregistrement=enregistrement(filename) 
 
     def afficher(self, id_to_track, candidates, message):
         #si candidates est un dictionnaire, on prend les clés et on en fait des int
@@ -595,3 +598,7 @@ class Computation():
         #print(f"Début de l'expansion vide avec {len(self.empty_triangles)} triangles vides.")
         for triangles in self.empty_triangles:
             self.expansion(triangles, "expansion_empty", ratio_threshold, min_density, nb_min_region, ratio_area, max_dist_between_2_persons)
+
+    def arret_enregistrement(self):
+        if self.enregistrement is not None:
+            self.enregistrement.stop_csv()
