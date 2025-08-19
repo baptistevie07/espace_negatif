@@ -1,6 +1,6 @@
 from utils.affichage import Affichage
 from utils.reception_osc import Reception_osc
-from utils.computation import *
+from utils.computation_enregistrement import *
 from utils.area_life import Life
 from utils.emission_osc import Emission_osc
 import time

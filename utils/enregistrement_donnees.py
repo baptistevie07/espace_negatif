@@ -19,6 +19,7 @@ class enregistrement():
     def init_frame(self):
         self.data = {}
     def save_data(self,fieldname,data):
+        data=dict(data)
         #print(data)
         if False: #Test
             self.data[1] = {}
@@ -26,7 +27,6 @@ class enregistrement():
             self.data[1][fieldname] = 3
             self.data[2][fieldname] = 4
             return
-        print(data)
         for id,value in data.items():
             if id not in self.data:
                 self.data[id] = {}
@@ -80,7 +80,6 @@ class enregistrement():
             rows.append(row)
 
         with self._state["lock"]:
-            print(rows)
             for r in rows:
                 self._state["writer"].writerow(r)
                 self._state["frame_count"] += 1

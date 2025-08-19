@@ -5,9 +5,10 @@ from scipy.spatial import cKDTree
 from collections import defaultdict
 import time
 from itertools import combinations
+from utils.enregistrement_donnees import enregistrement
 
 class Computation():
-    def __init__(self):
+    def __init__(self,filename=None):
         self.points = None
         self.tri = None
         self.triangle_counts = None
@@ -20,6 +21,7 @@ class Computation():
         self.tree = None  # cKDTree pour les recherches de voisinage
         self.neighbors = None  # Dictionnaire pour les voisins de Delaunay
         self.area_life = 0
+        self.enregistrement=enregistrement(filename) 
 
     def afficher(self, id_to_track, candidates, message):
         #si candidates est un dictionnaire, on prend les clés et on en fait des int
@@ -43,15 +45,13 @@ class Computation():
                 neighbors[b].add(a)
         return neighbors
     def has_distant_delaunay_neighbors(self,idx, points, delaunay_neighbors, min_dist=2.0, min_count=2):
-        count = 0
         p = points[idx]
+        min_dist = 1000
         for neighbor_idx in delaunay_neighbors[idx]:
             dist = np.linalg.norm(p - points[neighbor_idx])
-            if dist >= min_dist:
-                count += 1
-                if count >= min_count:
-                    return True
-        return False
+            if dist < min_dist:
+                min_dist = dist
+        self.enregistrement.save_data("min_dist", {idx: min_dist})
     def compte_voisins_communs(self,triangle_counts, distance_threshold=0.4):
         # Étape 1 — associer à chaque point la liste des triangles auxquels il appartient
         point_to_triangles = defaultdict(set)
@@ -151,7 +151,7 @@ class Computation():
             angles = np.array(angles)
             sorted_indices = np.argsort(angles)
             sorted_angles = angles[sorted_indices]
-            sorted_neighbors = [other_indices[i] for i in sorted_indices]
+
 
             diffs = np.diff(sorted_angles)
             last_diff = 360 + sorted_angles[0] - sorted_angles[-1]
@@ -164,10 +164,10 @@ class Computation():
             else:
                 core_candidates.append(idx)
         # Étape 2 – filtrage des core_candidates avec les points du contour comme "référence angulaire"
-        final_candidates = []
+ 
 
         extended_non_candidates = (set(range(len(self.points))) - set(core_candidates)) | contour_candidates
-
+        dict_angle_max = {}
         for idx in core_candidates:
             point = self.points[idx]
             angles = []
@@ -187,64 +187,22 @@ class Computation():
             angles = np.array(angles)
             sorted_indices = np.argsort(angles)
             sorted_angles = angles[sorted_indices]
-            sorted_neighbors = [other_indices[i] for i in sorted_indices]
+            
 
             diffs = np.diff(sorted_angles)
             last_diff = 360 + sorted_angles[0] - sorted_angles[-1]
             diffs = np.append(diffs, last_diff)
 
-            keep = True
-            
+         
+            angle_max = 0
             for i, delta in enumerate(diffs):
-                if delta < angle_max:
-                    continue
-                #print(f"Point {idx} rejeté pour angle suspect {delta:.1f}°")
-                a_idx = sorted_neighbors[i]
-                b_idx = sorted_neighbors[(i + 1) % len(sorted_neighbors)]
-
-                d_ab = np.linalg.norm(self.points[a_idx] - self.points[b_idx])
-                d_ai = np.linalg.norm(self.points[a_idx] - point)
-                d_bi = np.linalg.norm(self.points[b_idx] - point)
-                if not (d_ai < 0.9 * d_ab and d_bi < 0.9 * d_ab):
-                    keep = False
-                    if idx in id_to_track:
-                        print(f"Point {idx} rejeté pour angle suspect {delta:.1f}° entre {a_idx} et {b_idx}")
-                    break
-                if d_ab> 2.5:
-                    keep = False
-                    if idx in id_to_track:
-                        print(f"Point {idx} rejeté pour angle suspect {delta:.1f}° entre {a_idx} et {b_idx} (distance {d_ab:.2f} > 2.5)")
-                    break
-
-            if keep:
-                final_candidates.append(idx)
-        # On a trouvé des candidats, si deux sont très proches, si un est gardé, on garde l'autre
-        if not final_candidates:
-            return []
-        if  len(final_candidates) == len(filtered_candidates):
-            return final_candidates
-        point_to_triangles = defaultdict(set)
-
-        for i, tri_pts in enumerate(self.tri.simplices):
-            for pt in tri_pts:
-                point_to_triangles[pt].add(i)
-
-        for a, b in combinations(filtered_candidates, 2):
-            #print(f"Comparaison des points {a} et {b} avec distance {np.linalg.norm(self.points[a] - self.points[b]):.2f}")
-            if np.linalg.norm(self.points[a] - self.points[b]) < 0.5:
-                #print(f"Points {a} et {b} très proches, vérification des triangles")
-                if a in final_candidates and b not in final_candidates:
-                    final_candidates.append(b)
-                    if b in id_to_track:
-                        print(f"Point {b} conservé car proche de {a}")
-                elif b in final_candidates and a not in final_candidates:
-                    final_candidates.append(a)
-                    if a in id_to_track:
-                        print(f"Point {a} conservé car proche de {b}")
-        return final_candidates
+                if delta > angle_max:
+                    angle_max = delta
+            dict_angle_max[idx] = angle_max
+        self.enregistrement.save_data("angle_max", dict_angle_max)
+        print("enregistrement angle max",dict_angle_max)
 
     def personnes_centrales(self, n_triangles, distance_min, angle_max, id_to_track=[]):
-        
         points = self.points
         tri = self.tri
         triangle_counts = self.triangle_counts
@@ -264,9 +222,9 @@ class Computation():
             self.candidates = None
             self.candidates_triangles = None
             return None
-        weak_candidates = {idx: count for idx, count in shared_counts.items() if n_triangles-2<=count<n_triangles}
+        weak_candidates = {idx: count for idx, count in candidates.items() if n_triangles-2<=count<n_triangles}
         #print("weak",weak_candidates)
-        candidates = {idx: count for idx, count in shared_counts.items() if count >= n_triangles}
+        candidates = {idx: count for idx, count in candidates.items() if count >= n_triangles}
         #print("central",candidates)
         #Si un candidat faible est relié à un autre faible ou à un fort, on le garde
         for idx, count in weak_candidates.items():
@@ -277,69 +235,41 @@ class Computation():
                         print(f"Point {idx} conservé car relié à un autre candidat")
                     break
         id_to_track = self.afficher(id_to_track, candidates, f"moins de {n_triangles} triangles")
+        #print(candidates)
+        self.enregistrement.save_data("n_triangles",candidates)
         
-        if not candidates:
-            self.candidates = None
-            self.candidates_triangles = None
-            return None
         candidate_indices = list(candidates.keys())
         filtered_candidates = []
+        dict_distance_min={}
         for idx in candidate_indices:
             point = points[idx]
             is_far = True
+            distance_min=10000
             for other_idx, other_point in enumerate(points):
                 if other_idx not in candidate_indices:
                     distance = np.linalg.norm(point - other_point)
                     if distance < distance_min:
-                        is_far = False
-                        break
-            if is_far:
-                filtered_candidates.append(idx)
+                        distance_min = distance
+            dict_distance_min[idx] = distance_min
+        self.enregistrement.save_data("distance_min", dict_distance_min)
         filtered_candidates = list(set(filtered_candidates))
         id_to_track = self.afficher(id_to_track, filtered_candidates, f"proche d'un autre point (distance < {distance_min})")
-        #print(f"Nombre de candidats après filtrage : {len(filtered_candidates)}")
-        if len(filtered_candidates) == 0:
-            self.candidates = None
-            self.candidates_triangles = None
-            return None
-        #if len(filtered_candidates) == 1:
-         #   if self.candidates != filtered_candidates:
-          #      self.candidates = filtered_candidates
-           #     return filtered_candidates
-            #return None
-        
+ 
         # Étape 3 – filtrage angulaire
-        final_candidates = self.filtrage_angulaire(filtered_candidates, angle_max, id_to_track)
+        self.filtrage_angulaire(filtered_candidates, angle_max, id_to_track)
 
-        id_to_track = self.afficher(id_to_track, final_candidates, f"angle max {angle_max}°")
+        id_to_track = self.afficher(id_to_track, filtered_candidates, f"angle max {angle_max}°")
         delaunay_neighbors = self.neighbors
-        final2_candidates = []
-        for idx in final_candidates:
-            if self.has_distant_delaunay_neighbors(idx, points, delaunay_neighbors, min_dist=3, min_count=2):
-                final2_candidates.append(idx)
-        #print(f"Nombre de candidats finaux après filtrage angulaire et voisins éloignés : {len(final2_candidates)}, avant : {len(filtered_candidates)}")
-        #On regarde les candidats non retenus, et on les garde si ils ont des voisins candidats qui ont été retenus
+
         for idx in filtered_candidates:
-            if idx in final2_candidates:
-                continue
-            # Vérifier si ce point a des voisins candidats qui ont été retenus
-            has_candidate_neighbor = False
-            for neighbor_idx in delaunay_neighbors[idx]:
-                if neighbor_idx in final2_candidates and np.linalg.norm(points[idx] - points[neighbor_idx]) < 2:
-                    has_candidate_neighbor = True
-                    break
-            if has_candidate_neighbor:
-                final2_candidates.append(idx)
-                if idx in id_to_track:
-                    print(f"Point {idx} conservé car voisin candidat retenu")
-        id_to_track = self.afficher(id_to_track, final2_candidates, f"voisins éloignés (distance >= 2.0)")
+            self.has_distant_delaunay_neighbors(idx, points, delaunay_neighbors, min_dist=3, min_count=2)
+
+        #print(f"Nombre de candidats finaux après filtrage angulaire et voisins éloignés : {len(final2_candidates)}, avant : {len(filtered_candidates)}")
+        
 
         # prend final2_candidates comme candidats finaux, on en fait une liste de liste et dans ses sous-listes, on rassemble les candidats très proches, que l'on traitera ensemble
-        if not final2_candidates:
-            self.candidates = None
-            self.candidates_triangles = None
-            return None
-        final2_candidates = list(set(final2_candidates))
+ 
+        final2_candidates = list(set(filtered_candidates))
         grouped_candidates = []
         already_grouped = set()
         for candidate in final2_candidates:
@@ -366,7 +296,7 @@ class Computation():
         
         #print(f"nombre de triangles candidats : {len(self.candidates_triangles[0])}")
         self.candidates = final2_candidates
-        
+        print(f"Nombre de candidats finaux : {len(self.candidates)}")
         
         
         return None
@@ -595,3 +525,15 @@ class Computation():
         #print(f"Début de l'expansion vide avec {len(self.empty_triangles)} triangles vides.")
         for triangles in self.empty_triangles:
             self.expansion(triangles, "expansion_empty", ratio_threshold, min_density, nb_min_region, ratio_area, max_dist_between_2_persons)
+
+    def arret_enregistrement(self):
+        if self.enregistrement is not None:
+            self.enregistrement.stop_csv()
+
+    def enregistrer(self):
+        if self.enregistrement is not None:
+            self.enregistrement.write_frame()
+
+    def init_frame(self):
+        if self.enregistrement is not None:
+            self.enregistrement.init_frame()
